@@ -3,11 +3,11 @@ const HIT_X_RATIO = 0.2;
 const NOTE_H = 30;
 const LABEL_LIFE_S = 0.9;
 const LABEL_HOLD = 0.6;
-const LABEL_COLOR = { perfect: COLORS.greenDark, good: COLORS.text, miss: COLORS.text };
 const COLORS = {
   bg: '#faf9f5', text: '#141413', rule: '#b0aea5', band: '#e8e6dc',
   orange: '#d97757', blue: '#6a9bcc', green: '#788c5d', greenDark: '#4d5f36',
 };
+const LABEL_COLOR = { perfect: COLORS.greenDark, good: COLORS.text, miss: COLORS.text };
 const GRADE_FILL = { perfect: COLORS.green, good: COLORS.orange, miss: COLORS.band };
 
 const laneY = (string, h) => (string - 0.5) * (h / 6);
