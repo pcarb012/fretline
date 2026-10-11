@@ -1,0 +1,19 @@
+{
+  "name": "fretline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3939 --strictPort",
+    "build": "vite build",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "pitchy": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}

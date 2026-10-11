@@ -1,0 +1,41 @@
+# Fretline
+
+A browser guitar trainer. It listens through your microphone, scrolls notes toward a hit line and scores each one. Clean-room build: no code, art, songs or names from any other app.
+
+## Run it
+
+1. Install Node 20 or newer.
+2. Double-click `start.bat` (or run `npm install` then `npm run dev`).
+3. Open http://localhost:3939 and allow the microphone.
+
+Other commands: `npm test` (tests and coverage), `npm run build` (production build in `dist/`).
+
+Use headphones for the click and plug a guitar into the computer, or hold the mic near an acoustic. Run **Calibrate latency** once; the offset is saved in the browser.
+
+## How scoring works
+
+- A note is hit when the pitch is within 50 cents of the expected note (any string that gives the same pitch counts).
+- Timing: within 60 ms is Perfect (100 points), within 140 ms is Good (60 points, labelled Early or Late), anything else is a Miss.
+- Stars: 1 at 50% of the maximum, 2 at 75%, 3 at 90%.
+
+## Add a song
+
+Open `src/songs/index.js` and add a line to `SONGS`:
+
+```js
+build('my-song', 'My song', 80, [
+  [1, 0, 1],   // [string, fret, durationBeats]; string 1 = high e, 6 = low E
+  [1, 3, 1],
+  [2, 1, 2],
+])
+```
+
+Notes are placed one after another. For gaps or chords, write the objects by hand:
+`{ beat, string, fret, durationBeats }`. Standard tuning is `[40, 45, 50, 55, 59, 64]` (MIDI, low to high). The song-list screen picks it up automatically. Keep songs original or public domain.
+
+## Layout
+
+- `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session)
+- `src/audio/` microphone, AudioWorklet, pitch detection (`pitchy`), click sound
+- `src/ui/` screens and the canvas highway
+- `tests/` Vitest tests
