@@ -16,9 +16,15 @@ describe('song catalogue', () => {
     expect(LESSONS[1].title).toBe('Pentatonic Across the Neck');
     expect(LESSONS.every((l) => l.sections.length > 0)).toBe(true);
   });
-  it('flags double stops only where a sounding note goes unjudged', () => {
+  it('flags double stops only on lessons with at least 10% unjudged notes', () => {
+    const flagged = LESSONS.map((l, i) => (hasUnscoredDoubleStops(l) ? i + 1 : null)).filter(Boolean);
+    expect(flagged).toEqual([1, 4, 7, 8, 9, 10, 11, 12]);
     expect(hasUnscoredDoubleStops(EXERCISES[0])).toBe(false);
-    expect(hasUnscoredDoubleStops(LESSONS[0])).toBe(true);
+  });
+  it('sits exactly on the 10% line', () => {
+    const notes = (n, off) => Array.from({ length: n }, (_, i) => ({ judge: i >= off }));
+    expect(hasUnscoredDoubleStops({ notes: notes(10, 1) })).toBe(true);
+    expect(hasUnscoredDoubleStops({ notes: notes(11, 1) })).toBe(false);
   });
   it('has no NaN timing in any lesson', () => {
     for (const l of LESSONS) {

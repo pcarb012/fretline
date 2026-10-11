@@ -10,11 +10,11 @@ export const isJudged = (note) => note.judge !== false;
 
 export const judgedCount = (song) => song.notes.filter(isJudged).length;
 
-/** True when a judged note shares its beat with an unjudged one (top note scored). */
-export function hasUnscoredDoubleStops(song) {
-  const judgedBeats = new Set(song.notes.filter(isJudged).map((n) => n.beat));
-  return song.notes.some((n) => !isJudged(n) && judgedBeats.has(n.beat));
-}
+export const DOUBLE_STOP_SHARE = 0.1;
+
+/** True when at least 10% of the notes are unjudged (top note of a double stop scored). */
+export const hasUnscoredDoubleStops = (song) =>
+  (song.notes.length - judgedCount(song)) / song.notes.length >= DOUBLE_STOP_SHARE;
 
 export function expectedMidiList(song) {
   return song.notes.map((n) => fretMidi(song.tuning, n.string, n.fret));
