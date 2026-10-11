@@ -61,3 +61,16 @@ describe('score and stars', () => {
     expect(countGrades(['perfect', 'perfect', 'good', 'miss'])).toEqual({ perfect: 2, good: 1, miss: 1 });
   });
 });
+
+describe('custom pitch tolerance', () => {
+  it('pitchMatches honours a tighter or looser tolerance', () => {
+    expect(pitchMatches(60, 60.3, 25)).toBe(false);
+    expect(pitchMatches(60, 60.3, 40)).toBe(true);
+    expect(pitchMatches(60, 60.7, 75)).toBe(true);
+  });
+  it('judgeNote passes the tolerance through', () => {
+    const args = { expectedMidi: 60, midiFloat: 60.4, dt: 0 };
+    expect(judgeNote(args).grade).toBe('perfect');
+    expect(judgeNote({ ...args, toleranceCents: 30 }).grade).toBe('miss');
+  });
+});

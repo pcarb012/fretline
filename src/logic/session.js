@@ -8,8 +8,9 @@ export const MISS_GRACE_S = 0.25;
 /**
  * Judging state for one play. Times are seconds from song beat 0.
  * onOnset() judges a heard note; tick() turns overdue notes into misses.
+ * options.toleranceCents overrides the pitch tolerance (debug tuning).
  */
-export function createSession(song, speed = 1) {
+export function createSession(song, speed = 1, { toleranceCents } = {}) {
   const times = noteTimes(song, speed);
   const midis = expectedMidiList(song);
   const results = new Array(times.length).fill(null);
@@ -19,7 +20,7 @@ export function createSession(song, speed = 1) {
     return times
       .map((t, i) => ({ i, dt: onset.time - t }))
       .filter(({ i, dt }) => judged[i] && results[i] === null && Math.abs(dt) <= GOOD_S)
-      .filter(({ i }) => pitchMatches(midis[i], onset.midiFloat))
+      .filter(({ i }) => pitchMatches(midis[i], onset.midiFloat, toleranceCents))
       .sort((a, b) => Math.abs(a.dt) - Math.abs(b.dt))[0];
   }
 
@@ -29,7 +30,9 @@ export function createSession(song, speed = 1) {
     onOnset(onset) {
       const best = bestCandidate(onset);
       if (!best) return null;
-      const verdict = judgeNote({ expectedMidi: midis[best.i], midiFloat: onset.midiFloat, dt: best.dt });
+      const verdict = judgeNote({
+        expectedMidi: midis[best.i], midiFloat: onset.midiFloat, dt: best.dt, toleranceCents,
+      });
       results[best.i] = { ...verdict, dt: best.dt };
       return { index: best.i, ...results[best.i] };
     },
