@@ -92,3 +92,24 @@ canvas { display: block; width: 100%; height: 360px; background: var(--bg); bord
 }
 
 .song.locked { opacity: 0.55; }
+
+.device-picker { margin: 16px 0; }
+.device-picker label { font-family: Poppins, Arial, sans-serif; font-weight: 600; }
+.device-picker select { font: inherit; margin-left: 8px; padding: 6px 8px; border: 1px solid var(--text); border-radius: 0; background: var(--bg); color: var(--text); max-width: 100%; }
+.device-picker small { display: block; margin-top: 6px; }
+.debug-downloads { margin-top: 24px; }
+
+.debug {
+  position: fixed; left: 8px; bottom: 8px; z-index: 10; width: 300px; max-width: calc(100% - 16px);
+  background: var(--bg); border: 1px solid var(--text); font-size: 13px; line-height: 1.4;
+}
+.debug > button { width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--rule); padding: 6px 10px; font-size: 13px; }
+@media (min-width: 1000px) { body.debug-on main { margin-left: 316px; margin-right: auto; } }
+.dbg-body { padding: 8px 10px; }
+.dbg-body.hidden { display: none; }
+.dbg-live { font-family: Poppins, Arial, sans-serif; font-weight: 500; min-height: 2.8em; margin-bottom: 6px; }
+.dbg-slider { display: block; margin: 6px 0; }
+.dbg-slider span { display: block; }
+.dbg-slider input { width: 100%; accent-color: var(--orange); }
+.dbg-check { display: block; margin: 6px 0; }
+.dbg-events { margin: 6px 0 0; padding-top: 6px; border-top: 1px solid var(--rule); min-height: 8.4em; white-space: pre-wrap; font-size: 12px; }

@@ -1,7 +1,8 @@
 import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.js';
 import { calibrationResult } from '../logic/latency.js';
 import { createOnsetTracker } from '../logic/onsets.js';
-import { getLatencyMs, setLatencyMs } from '../store.js';
+import { getInputDevice, getLatencyMs, setLatencyMs } from '../store.js';
+import { createDevicePicker } from './devicePicker.js';
 import { backButton, h, micError } from './dom.js';
 
 const CLICKS = 8;
@@ -26,8 +27,17 @@ export function mountCalibrate(root, go) {
   const message = h('p', {}, 'Eight clicks will play. Pluck any string on each click, as evenly as you can.');
   const result = h('div', {});
   const startBtn = h('button', { class: 'primary' }, 'Start');
-  root.append(backButton(go), h('h2', {}, 'Latency calibration'), message,
-    h('p', {}, `Current offset: ${getLatencyMs()} ms`), startBtn, result);
+  const offset = h('p', {});
+  const showOffset = () => {
+    offset.textContent = `Current offset for this input: ${getLatencyMs(getInputDevice())} ms`;
+  };
+  showOffset();
+  const picker = createDevicePicker(() => {
+    stopMic();
+    showOffset();
+  });
+  root.append(backButton(go), h('h2', {}, 'Latency calibration'), picker.el, message,
+    offset, startBtn, result);
 
   let off = null;
   let timer = 0;
@@ -43,6 +53,7 @@ export function mountCalibrate(root, go) {
       startBtn.disabled = false;
       return;
     }
+    picker.refresh();
     const tracker = createOnsetTracker();
     const onsets = [];
     off = onFrame((f) => {
@@ -65,7 +76,8 @@ export function mountCalibrate(root, go) {
       message.textContent = RETRY[r.reason];
       return;
     }
-    setLatencyMs(r.ms);
+    setLatencyMs(r.ms, getInputDevice());
+    showOffset();
     message.textContent = `Saved. Your offset is ${Math.round(r.ms)} ms.`;
   }
 
