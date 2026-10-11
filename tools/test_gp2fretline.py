@@ -70,11 +70,16 @@ class ConvertTest(unittest.TestCase):
         self.assertEqual([n["beat"] for n in notes], [0, 0.3333, 0.6667])
 
     def test_tie_extends_previous_note(self):
-        bar = [(4, False, [(6, 5, "n")])] * 1 + [(2, False, []), (4, False, [])]
-        bar2 = [(4, False, [(6, 5, "t")]), (2, False, []), (4, False, [])]
+        bar = [(1, False, [(6, 5, "n")])]
+        bar2 = [(1, False, [(6, 5, "t")])]
         notes = conv.convert(make_song([bar, bar2]), "x", "X")["notes"]
         self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["durationBeats"], 5)
+        self.assertEqual(notes[0]["durationBeats"], 8)
+
+    def test_tie_after_rest_becomes_its_own_note(self):
+        bar = [(4, False, [(6, 5, "n")]), (4, False, []), (4, False, [(6, 5, "t")]), (4, False, [])]
+        notes = conv.convert(make_song([bar]), "x", "X")["notes"]
+        self.assertEqual([(n["beat"], n["durationBeats"]) for n in notes], [(0, 1), (2, 1)])
 
     def test_muted_and_chord_notes_are_unjudged(self):
         bar = [(4, False, [(6, 0, "d")]), (4, False, [(5, 0, "g")]),

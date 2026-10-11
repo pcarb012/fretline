@@ -1,5 +1,5 @@
-import { EXERCISES, LESSONS } from '../songs/index.js';
-import { SPEEDS, hasUnscoredDoubleStops } from '../logic/song.js';
+import { EXERCISES, LESSONS, LOAD_FAILURES } from '../songs/index.js';
+import { SPEEDS, hasUnscoredDoubleStops, loadNotice } from '../logic/song.js';
 import { isUnlocked } from '../logic/unlock.js';
 import { allBest, getBest, getLatencyMs, getSpeed, setSpeed } from '../store.js';
 import { h, starsEl } from './dom.js';
@@ -8,7 +8,7 @@ const LESSON_IDS = LESSONS.map((l) => l.id);
 
 function songRow(song, go, speed, locked = false) {
   const best = getBest(song.id, speed);
-  const note = hasUnscoredDoubleStops(song) ? ' - double stops: top note scored' : '';
+  const note = hasUnscoredDoubleStops(song) ? ' - some notes are not scored' : '';
   const action = locked
     ? h('button', { disabled: '', title: 'Earn one star on the lesson before it' }, 'Locked')
     : h('button', { class: 'primary', onclick: () => go('play', { song, speed }) }, 'Play');
@@ -56,6 +56,7 @@ export function mountSongList(root, go) {
       h('button', { onclick: () => go('calibrate') }, `Calibrate latency (${getLatencyMs()} ms)`)),
     h('div', { class: 'label' }, 'Speed'),
     speedRow,
+    LOAD_FAILURES.length ? h('div', { class: 'notice error' }, loadNotice(LOAD_FAILURES)) : null,
     h('div', { class: 'label' }, 'Exercises'),
     exercises,
     h('div', { class: 'label' }, 'Blues Masterclass lessons'),

@@ -12,7 +12,7 @@ export const judgedCount = (song) => song.notes.filter(isJudged).length;
 
 export const DOUBLE_STOP_SHARE = 0.1;
 
-/** True when at least 10% of the notes are unjudged (top note of a double stop scored). */
+/** True when at least 10% of the notes are unjudged (some notes are not scored). */
 export const hasUnscoredDoubleStops = (song) =>
   (song.notes.length - judgedCount(song)) / song.notes.length >= DOUBLE_STOP_SHARE;
 
@@ -32,8 +32,10 @@ export function songLengthSeconds(song, speed = 1) {
   return end * bs;
 }
 
+const MAX_FRET = 24;
+
 const noteOk = (n) =>
-  n.string >= 1 && n.string <= 6 && n.fret >= 0 && n.beat >= 0 && n.durationBeats > 0 &&
+  n.string >= 1 && n.string <= 6 && Number.isInteger(n.fret) && n.fret >= 0 && n.fret <= MAX_FRET && n.beat >= 0 && n.durationBeats > 0 &&
   (n.judge === undefined || typeof n.judge === 'boolean');
 
 const sectionsOk = (sections) =>
@@ -41,7 +43,21 @@ const sectionsOk = (sections) =>
   (Array.isArray(sections) && sections.every((s) => s.beat >= 0 && typeof s.name === 'string' && s.name));
 
 export function validateSong(song) {
-  const headOk = song && song.id && song.title && song.bpm > 0 && song.tuning?.length === 6;
+  const headOk = song && song.id && song.title && song.bpm > 0 && song.tuning?.length === 6 &&
+    song.tuning.every(Number.isInteger);
   const notesOk = Array.isArray(song?.notes) && song.notes.length > 0 && song.notes.every(noteOk);
   return Boolean(headOk && notesOk && song.notes.some(isJudged) && sectionsOk(song.sections));
+}
+
+/** Split songs into valid ones and the ids of those that failed validation. */
+export function partitionSongs(songs) {
+  const valid = songs.filter(validateSong);
+  const failedIds = songs.filter((s) => !valid.includes(s)).map((s) => s?.id ?? 'unknown');
+  return { valid, failedIds };
+}
+
+export function loadNotice(failedIds) {
+  if (failedIds.length === 0) return '';
+  const noun = failedIds.length === 1 ? 'song' : 'songs';
+  return `${failedIds.length} ${noun} failed to load: ${failedIds.join(', ')}`;
 }

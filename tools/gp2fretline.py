@@ -8,6 +8,7 @@ also for 12/8. A shuffle feel (TripletFeel.eighth) moves each off-beat eighth to
 two thirds of the beat. Ties extend the previous note, rests are skipped, dead and
 ghost notes are kept with judge:false. When a beat has several notes the highest
 pitch is judged and the rest are kept with judge:false.
+Only voice 0, the first tempo and no capo are handled.
 """
 from __future__ import annotations
 
@@ -72,13 +73,16 @@ def convert(song: gp.Song, song_id: str, title: str) -> dict:
                              "name": header.marker.title})
         for beat in measure.voices[0].beats:
             if beat.status != gp.BeatStatus.normal or not beat.notes:
+                open_by_string.clear()
                 continue
             start, end = span_ticks(beat, origin, shuffle)
-            fresh = [n for n in beat.notes if n.type != gp.NoteType.tie]
+            fresh = []
             for note in beat.notes:
-                if note.type == gp.NoteType.tie and note.string in open_by_string:
-                    prev = open_by_string[note.string]
+                prev = open_by_string.get(note.string)
+                if note.type == gp.NoteType.tie and prev:
                     prev["durationBeats"] = round(end / QUARTER - prev["beat"], 4)
+                else:
+                    fresh.append(note)  # an orphan tie becomes a note of its own
             for note, judged in beat_notes(fresh, tuning):
                 entry = {"beat": round(start / QUARTER, 4), "string": note.string,
                          "fret": note.value, "durationBeats": round((end - start) / QUARTER, 4)}

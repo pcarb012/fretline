@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createSession } from '../src/logic/session.js';
-import { isJudged, judgedCount, validateSong } from '../src/logic/song.js';
+import { isJudged, judgedCount, loadNotice, partitionSongs, validateSong } from '../src/logic/song.js';
 import { isUnlocked } from '../src/logic/unlock.js';
 
 const tuning = [40, 45, 50, 55, 59, 64];
@@ -31,6 +31,27 @@ describe('judge flag', () => {
     expect(validateSong({ ...song, sections: [{ beat: -1, name: 'x' }] })).toBe(false);
     expect(validateSong({ ...song, sections: [{ beat: 0 }] })).toBe(false);
     expect(validateSong({ ...song, sections: 'Intro' })).toBe(false);
+  });
+});
+
+describe('song checks', () => {
+  it('rejects frets above 24 and non-integer frets', () => {
+    expect(validateSong({ ...song, notes: [{ ...song.notes[0], fret: 25 }] })).toBe(false);
+    expect(validateSong({ ...song, notes: [{ ...song.notes[0], fret: 24 }] })).toBe(true);
+    expect(validateSong({ ...song, notes: [{ ...song.notes[0], fret: 2.5 }] })).toBe(false);
+  });
+  it('rejects non-integer tuning entries', () => {
+    expect(validateSong({ ...song, tuning: [40, 45, 50, 55, 59, 64.5] })).toBe(false);
+    expect(validateSong({ ...song, tuning: [40, 45, 50, 55, 59, '64'] })).toBe(false);
+  });
+  it('drops invalid songs and reports their ids', () => {
+    const bad = { ...song, id: 'bad', bpm: 0 };
+    expect(partitionSongs([song, bad, null])).toEqual({ valid: [song], failedIds: ['bad', 'unknown'] });
+  });
+  it('words the load notice', () => {
+    expect(loadNotice([])).toBe('');
+    expect(loadNotice(['a'])).toBe('1 song failed to load: a');
+    expect(loadNotice(['a', 'b'])).toBe('2 songs failed to load: a, b');
   });
 });
 
@@ -70,6 +91,9 @@ describe('isUnlocked', () => {
   it('needs the lesson just before, not an earlier one', () => {
     expect(isUnlocked(2, bests([['a@1', { score: 99, stars: 3 }]]), ids)).toBe(false);
     expect(isUnlocked(2, bests([['b@0.75', { score: 99, stars: 2 }]]), ids)).toBe(true);
+  });
+  it('ignores malformed entries', () => {
+    expect(isUnlocked(1, { 'a@1': null, 'a@0.5': {} }, ids)).toBe(false);
   });
   it('does not confuse lesson ids that share a prefix', () => {
     expect(isUnlocked(1, bests([['blues-10@1', { score: 1, stars: 3 }]]), ["blues-1", "blues-2"])).toBe(false);

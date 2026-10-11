@@ -5,5 +5,5 @@
 export function isUnlocked(lessonIndex, bests, lessonIds) {
   if (lessonIndex <= 0) return true;
   const prefix = `${lessonIds[lessonIndex - 1]}@`;
-  return Object.entries(bests).some(([key, best]) => key.startsWith(prefix) && best.stars >= 1);
+  return Object.entries(bests).some(([key, best]) => key.startsWith(prefix) && best?.stars >= 1);
 }
