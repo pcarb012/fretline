@@ -2,12 +2,12 @@
 // usage: node e2e/genwav.mjs <songId> <out.wav> [extraLeadSec] [speed]
 import fs from 'node:fs';
 import path from 'node:path';
-import * as catalogue from '../src/songs/index.js';
+import { findSong } from './lib.mjs';
 
 const SR = 48000;
 const [, , id, out, extra = '0', speed = '1'] = process.argv;
-const song = Object.values(catalogue).flat().find((s) => s?.id === id);
-if (!song || !out) {
+const song = out ? await findSong(id) : null;
+if (!song) {
   process.stderr.write('usage: node e2e/genwav.mjs <songId> <out.wav> [extraLeadSec] [speed]\n');
   process.exit(1);
 }
@@ -34,7 +34,8 @@ function pluck(freq, start, dur) {
   }
 }
 
-for (const note of song.notes) {
+// Notes marked judge:false (chord extras, dead notes) are skipped; only judged notes matter.
+for (const note of song.notes.filter((n) => n.judge !== false)) {
   const midi = song.tuning[6 - note.string] + note.fret;
   pluck(440 * 2 ** ((midi - 69) / 12), lead + note.beat * beatSec, Math.min(note.durationBeats * beatSec * 0.95, 1.5));
 }

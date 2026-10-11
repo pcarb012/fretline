@@ -1,6 +1,6 @@
 // Replay a recording against a song and print the score and each verdict.
 // usage: node e2e/replay.mjs <wav> <songId> [--speed 0.5] [--pad-ms 0] [--url http://localhost:3939/]
-//        [--record-take out.wav] [--save-log out.json] [--shot out.png] [--min-percent 100] [--headed]
+//        [--record-take out.wav] [--save-log out.json] [--shot out.png] [--mid-shot out.png --mid-ms 15000] [--min-percent 100] [--headed]
 import { replay, startServer } from './lib.mjs';
 
 function parseArgs(argv) {
@@ -31,6 +31,8 @@ try {
     takePath: flags['--record-take'],
     logPath: flags['--save-log'],
     shot: flags['--shot'],
+    midShot: flags['--mid-shot'],
+    midMs: Number(flags['--mid-ms'] ?? 15000),
     headless: !flags['--headed'],
   });
   const percent = Math.round((r.score / r.max) * 100);

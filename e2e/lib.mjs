@@ -4,10 +4,20 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
-import * as catalogue from '../src/songs/index.js';
 
-export function findSong(id) {
-  const song = Object.values(catalogue).flat().find((s) => s?.id === id);
+/** Every song in the catalogue. It uses import.meta.glob, so it is loaded through Vite, not plain Node. */
+async function loadSongs() {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  try {
+    const catalogue = await vite.ssrLoadModule('/src/songs/index.js');
+    return JSON.parse(JSON.stringify(Object.values(catalogue).flat().filter((s) => s?.id)));
+  } finally {
+    await vite.close();
+  }
+}
+
+export async function findSong(id) {
+  const song = (await loadSongs()).find((s) => s.id === id);
   if (!song) throw new Error(`No song with id "${id}"`);
   return song;
 }
@@ -38,12 +48,18 @@ export function padWav(wavPath, padMs) {
 
 /**
  * Play one song against a WAV through Chrome's fake microphone, with ?debug on.
- * options: { wav, songId, url, speed, padMs, recordTake, takePath, logPath, shot, headless }.
+ * options: { wav, songId, url, speed, padMs, recordTake, takePath, logPath, shot, midShot, midMs, headless }.
  * Returns { score, max, stars, verdicts, unmatched, log, errors }.
  */
 export async function replay(options) {
-  const { wav, songId, url, speed = 1, padMs = 0, recordTake, takePath, logPath, shot, headless = true } = options;
-  const song = findSong(songId);
+  const { wav, songId, url, speed = 1, padMs = 0, recordTake, takePath, logPath, shot, midShot, midMs = 15000, headless = true } = options;
+  const songs = await loadSongs();
+  const song = songs.find((s) => s.id === songId);
+  if (!song) throw new Error(`No song with id "${songId}"`);
+  // Lessons unlock one star at a time, so give every other song a star at every speed.
+  const bests = Object.fromEntries(
+    songs.filter((s) => s.id !== songId).flatMap((s) => [0.5, 0.75, 1].map((sp) => [`${s.id}@${sp}`, { score: 1, stars: 1 }])),
+  );
   const fakeWav = path.resolve(padWav(wav, padMs));
   const browser = await chromium.launch({
     headless,
@@ -56,14 +72,22 @@ export async function replay(options) {
   });
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true, permissions: ['microphone'] });
-    await context.addInitScript((s) => localStorage.setItem('fretline.speed', String(s)), speed);
+    await context.addInitScript(([sp, seed]) => {
+      localStorage.setItem('fretline.speed', String(sp));
+      localStorage.setItem('fretline.best', JSON.stringify(seed));
+    }, [speed, bests]);
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${url}?debug`);
     await page.waitForSelector('.songs');
     if (recordTake) await page.check('.dbg-check input');
-    await page.locator('.song', { has: page.locator('h3', { hasText: new RegExp(`^${song.title}$`) }) }).locator('text=Play').click();
+    const row = page.locator('.song').filter({ has: page.getByRole('heading', { name: song.title, exact: true }) });
+    await row.getByRole('button', { name: 'Play' }).click();
+    if (midShot) {
+      await page.waitForTimeout(midMs);
+      await page.screenshot({ path: midShot });
+    }
     await page.waitForSelector('.big', { timeout: 180000 });
     if (shot) await page.screenshot({ path: shot });
     const result = await readResults(page, song);
