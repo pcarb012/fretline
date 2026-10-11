@@ -1,26 +1,38 @@
-import { SONGS } from '../songs/index.js';
-import { SPEEDS } from '../logic/song.js';
-import { getBest, getLatencyMs, getSpeed, setSpeed } from '../store.js';
+import { EXERCISES, LESSONS } from '../songs/index.js';
+import { SPEEDS, hasUnscoredDoubleStops } from '../logic/song.js';
+import { isUnlocked } from '../logic/unlock.js';
+import { allBest, getBest, getLatencyMs, getSpeed, setSpeed } from '../store.js';
 import { h, starsEl } from './dom.js';
 
-function songRow(song, go, speed) {
+const LESSON_IDS = LESSONS.map((l) => l.id);
+
+function songRow(song, go, speed, locked = false) {
   const best = getBest(song.id, speed);
+  const note = hasUnscoredDoubleStops(song) ? ' - double stops: top note scored' : '';
+  const action = locked
+    ? h('button', { disabled: '', title: 'Earn one star on the lesson before it' }, 'Locked')
+    : h('button', { class: 'primary', onclick: () => go('play', { song, speed }) }, 'Play');
   return h(
     'div',
-    { class: 'song' },
-    h('div', {}, h('h3', {}, song.title), h('small', {}, `${song.notes.length} notes, ${song.bpm} BPM`)),
-    h('div', { class: 'row' }, starsEl(best ? best.stars : 0),
-      h('button', { class: 'primary', onclick: () => go('play', { song, speed }) }, 'Play')),
+    { class: locked ? 'song locked' : 'song' },
+    h('div', {}, h('h3', {}, song.title),
+      h('small', {}, `${song.notes.length} notes, ${song.bpm} BPM${note}`)),
+    h('div', { class: 'row' }, starsEl(best ? best.stars : 0), action),
   );
 }
 
 export function mountSongList(root, go) {
   let speed = getSpeed();
-  const list = h('div', { class: 'songs' });
+  const exercises = h('div', { class: 'songs' });
+  const lessons = h('div', { class: 'songs' });
   const speedRow = h('div', { class: 'row' });
 
   function render() {
-    list.replaceChildren(...SONGS.map((s) => songRow(s, go, speed)));
+    const bests = allBest();
+    exercises.replaceChildren(...EXERCISES.map((s) => songRow(s, go, speed)));
+    lessons.replaceChildren(
+      ...LESSONS.map((s, i) => songRow(s, go, speed, !isUnlocked(i, bests, LESSON_IDS))),
+    );
     speedRow.replaceChildren(
       ...SPEEDS.map((s) =>
         h('button', {
@@ -45,6 +57,8 @@ export function mountSongList(root, go) {
     h('div', { class: 'label' }, 'Speed'),
     speedRow,
     h('div', { class: 'label' }, 'Exercises'),
-    list,
+    exercises,
+    h('div', { class: 'label' }, 'Blues Masterclass lessons'),
+    lessons,
   );
 }

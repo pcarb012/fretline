@@ -3,7 +3,7 @@ import { beatSeconds, expectedMidiList, noteTimes, songLengthSeconds, validateSo
 import { calibrationResult, median, medianOffsetMs, spreadMs } from '../src/logic/latency.js';
 import { createOnsetTracker } from '../src/logic/onsets.js';
 import { createSession } from '../src/logic/session.js';
-import { SONGS } from '../src/songs/index.js';
+import { EXERCISES as SONGS } from '../src/songs/index.js';
 
 const tuning = [40, 45, 50, 55, 59, 64];
 const mini = {

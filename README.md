@@ -33,6 +33,10 @@ build('my-song', 'My song', 80, [
 Notes are placed one after another. For gaps or chords, write the objects by hand:
 `{ beat, string, fret, durationBeats }`. Standard tuning is `[40, 45, 50, 55, 59, 64]` (MIDI, low to high). The song-list screen picks it up automatically. Keep songs original or public domain.
 
+## Blues lessons
+
+`src/songs/blues/*.json` come from the Blues Masterclass .gp5 files. Rebuild them with `npm run lessons` (needs `uv` and the guitar-pro-mcp project; see `tools/gp2fretline.py`). Lesson N+1 unlocks after one star on lesson N. Notes marked `judge: false` (dead, ghost and the lower notes of double stops) are drawn in outline and not scored.
+
 ## Layout
 
 - `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session)

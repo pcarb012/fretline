@@ -18,7 +18,7 @@ function write(key, value) {
   }
 }
 
-function allBest() {
+export function allBest() {
   try {
     return JSON.parse(read(BEST_KEY)) ?? {};
   } catch {

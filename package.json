@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port 3939 --strictPort",
     "build": "vite build",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "lessons": "node tools/build-lessons.mjs"
   },
   "dependencies": {
     "pitchy": "^4.1.0"
