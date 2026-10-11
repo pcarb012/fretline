@@ -23,3 +23,10 @@ export function noteName(midi) {
 export function fretMidi(tuning, string, fret) {
   return tuning[tuning.length - string] + fret;
 }
+
+/** Cents as text with a sign, never "-0". */
+export function formatCents(cents) {
+  const n = Math.round(cents);
+  if (n === 0) return '0';
+  return n > 0 ? `+${n}` : String(n);
+}

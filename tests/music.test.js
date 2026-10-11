@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fretMidi, hzToMidiFloat, midiToHz, noteName, splitMidi, STANDARD_TUNING } from '../src/logic/music.js';
+import { formatCents, fretMidi, hzToMidiFloat, midiToHz, noteName, splitMidi, STANDARD_TUNING } from '../src/logic/music.js';
 import { rms, toNote } from '../src/logic/pitch.js';
 
 describe('Hz to MIDI and cents', () => {
@@ -63,5 +63,14 @@ describe('toNote', () => {
   it('computes rms', () => {
     expect(rms(new Float32Array([0.5, -0.5, 0.5, -0.5]))).toBeCloseTo(0.5, 6);
     expect(rms(new Float32Array(4))).toBe(0);
+  });
+});
+
+describe('formatCents', () => {
+  it('never shows -0 and signs the rest', () => {
+    expect(formatCents(-0.4)).toBe('0');
+    expect(formatCents(0.2)).toBe('0');
+    expect(formatCents(12.6)).toBe('+13');
+    expect(formatCents(-7.2)).toBe('-7');
   });
 });

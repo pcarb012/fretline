@@ -1,4 +1,5 @@
 const BEST_KEY = 'fretline.best';
+const SPEED_KEY = 'fretline.speed';
 const LATENCY_KEY = 'fretline.latencyMs';
 
 function read(key) {
@@ -25,13 +26,16 @@ function allBest() {
   }
 }
 
-export const getBest = (songId) => allBest()[songId] ?? null;
+const bestKey = (songId, speed) => `${songId}@${speed}`;
+
+export const getBest = (songId, speed) => allBest()[bestKey(songId, speed)] ?? null;
 
 /** Keep the higher score. Returns true if this run is a new best. */
-export function saveBest(songId, score, stars) {
+export function saveBest(songId, speed, score, stars) {
   const all = allBest();
-  if (all[songId] && all[songId].score >= score) return false;
-  write(BEST_KEY, JSON.stringify({ ...all, [songId]: { score, stars } }));
+  const key = bestKey(songId, speed);
+  if (all[key] && all[key].score >= score) return false;
+  write(BEST_KEY, JSON.stringify({ ...all, [key]: { score, stars } }));
   return true;
 }
 
@@ -41,3 +45,10 @@ export function getLatencyMs() {
 }
 
 export const setLatencyMs = (ms) => write(LATENCY_KEY, String(Math.round(ms)));
+
+export function getSpeed() {
+  const n = Number(read(SPEED_KEY));
+  return [0.5, 0.75, 1].includes(n) ? n : 1;
+}
+
+export const setSpeed = (speed) => write(SPEED_KEY, String(speed));

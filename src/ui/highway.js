@@ -2,9 +2,11 @@ const PX_PER_BEAT = 150;
 const HIT_X_RATIO = 0.2;
 const NOTE_H = 30;
 const LABEL_LIFE_S = 0.9;
+const LABEL_HOLD = 0.6;
+const LABEL_COLOR = { perfect: COLORS.greenDark, good: COLORS.text, miss: COLORS.text };
 const COLORS = {
   bg: '#faf9f5', text: '#141413', rule: '#b0aea5', band: '#e8e6dc',
-  orange: '#d97757', blue: '#6a9bcc', green: '#788c5d',
+  orange: '#d97757', blue: '#6a9bcc', green: '#788c5d', greenDark: '#4d5f36',
 };
 const GRADE_FILL = { perfect: COLORS.green, good: COLORS.orange, miss: COLORS.band };
 
@@ -39,7 +41,8 @@ function drawNote(g, note, x, y, width, result) {
   g.fillStyle = result && result.grade !== 'miss' ? COLORS.bg : COLORS.text;
   g.font = '600 18px Poppins, Arial, sans-serif';
   g.textBaseline = 'middle';
-  g.fillText(String(note.fret), x + 10, y + 1);
+  const textX = Math.min(Math.max(x + 10, 6), x + width - 16);
+  g.fillText(String(note.fret), textX, y + 1);
 }
 
 function drawNotes(g, w, h, hitX, frame) {
@@ -58,8 +61,9 @@ function drawLabels(g, h, hitX, frame) {
   for (const l of frame.labels) {
     const age = frame.now - l.at;
     if (age < 0 || age > LABEL_LIFE_S) continue;
-    g.globalAlpha = 1 - age / LABEL_LIFE_S;
-    g.fillStyle = l.grade === 'perfect' ? COLORS.green : l.grade === 'good' ? COLORS.orange : COLORS.text;
+    const t = age / LABEL_LIFE_S;
+    g.globalAlpha = t < LABEL_HOLD ? 1 : 1 - (t - LABEL_HOLD) / (1 - LABEL_HOLD);
+    g.fillStyle = LABEL_COLOR[l.grade];
     g.fillText(l.label, hitX - 100, laneY(l.string, h) - NOTE_H - 4 - age * 24);
   }
   g.globalAlpha = 1;

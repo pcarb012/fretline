@@ -5,7 +5,10 @@ import workletUrl from './mic-worklet.js?url';
 const WINDOW = 2048;
 let ctx = null;
 let micReady = null;
+let mic = null;
+let generation = 0;
 const listeners = new Set();
+const clicks = new Set();
 
 export function getContext() {
   if (!ctx) ctx = new AudioContext({ latencyHint: 'interactive' });
@@ -18,29 +21,56 @@ export function onFrame(fn) {
   return () => listeners.delete(fn);
 }
 
-async function openMic() {
+function emit(frame) {
+  for (const fn of listeners) {
+    try {
+      fn(frame);
+    } catch {
+      // One broken listener must not stop the others or the audio stream.
+    }
+  }
+}
+
+function releaseMic(parts) {
+  if (parts.node) {
+    parts.node.port.onmessage = null;
+    parts.node.disconnect();
+  }
+  if (parts.source) parts.source.disconnect();
+  if (parts.stream) parts.stream.getTracks().forEach((t) => t.stop());
+}
+
+async function openMic(token) {
   const audio = getContext();
   await audio.resume();
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-  });
-  await audio.audioWorklet.addModule(workletUrl);
-  const node = new AudioWorkletNode(audio, 'mic-window');
-  const detector = PitchDetector.forFloat32Array(WINDOW);
-  node.port.onmessage = ({ data }) => {
-    const [hz, clarity] = detector.findPitch(data.samples, audio.sampleRate);
-    const note = toNote(hz, clarity, rms(data.samples));
-    // Report the window centre, not its end.
-    const time = data.endTime - WINDOW / 2 / audio.sampleRate;
-    for (const fn of listeners) fn({ time, note });
-  };
-  audio.createMediaStreamSource(stream).connect(node);
+  const parts = { stream: null, source: null, node: null };
+  try {
+    parts.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    await audio.audioWorklet.addModule(workletUrl);
+    if (token !== generation) throw new DOMException('Microphone closed', 'AbortError');
+    parts.node = new AudioWorkletNode(audio, 'mic-window');
+    const detector = PitchDetector.forFloat32Array(WINDOW);
+    parts.node.port.onmessage = ({ data }) => {
+      const [hz, clarity] = detector.findPitch(data.samples, audio.sampleRate);
+      const note = toNote(hz, clarity, rms(data.samples));
+      // Report the window centre, not its end.
+      emit({ time: data.endTime - WINDOW / 2 / audio.sampleRate, note });
+    };
+    parts.source = audio.createMediaStreamSource(parts.stream);
+    parts.source.connect(parts.node);
+    mic = parts;
+  } catch (err) {
+    releaseMic(parts);
+    throw err;
+  }
 }
 
 /** Start the microphone once; later calls reuse it. Rejects if access is denied. */
 export function startMic() {
   if (!micReady) {
-    micReady = openMic().catch((err) => {
+    micReady = openMic(generation).catch((err) => {
       micReady = null;
       throw err;
     });
@@ -57,6 +87,32 @@ export function click(time, high = false) {
   gain.gain.setValueAtTime(0.4, time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
   osc.connect(gain).connect(audio.destination);
+  clicks.add(osc);
+  osc.onended = () => clicks.delete(osc);
   osc.start(time);
   osc.stop(time + 0.06);
+}
+
+/** Cancel clicks that have not played yet. */
+export function stopClicks() {
+  for (const osc of clicks) {
+    try {
+      osc.stop();
+    } catch {
+      // Already stopped.
+    }
+  }
+  clicks.clear();
+}
+
+/** Release the microphone and audio context. Safe to call at any time. */
+export function stopMic() {
+  generation += 1;
+  stopClicks();
+  if (mic) releaseMic(mic);
+  mic = null;
+  micReady = null;
+  listeners.clear();
+  if (ctx) ctx.close().catch(() => {});
+  ctx = null;
 }
