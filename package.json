@@ -7,13 +7,15 @@
     "dev": "vite --port 3939 --strictPort",
     "build": "vite build",
     "test": "vitest run --coverage",
-    "lessons": "node tools/build-lessons.mjs"
+    "lessons": "node tools/build-lessons.mjs",
+    "e2e": "node e2e/run.mjs"
   },
   "dependencies": {
     "pitchy": "^4.1.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^5.0.3",
+    "playwright": "^1.64.0",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"
   }
