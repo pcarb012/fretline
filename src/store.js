@@ -1,6 +1,10 @@
+import { normalizeTuning } from './logic/tuning.js';
+
 const BEST_KEY = 'fretline.best';
 const SPEED_KEY = 'fretline.speed';
 const LATENCY_KEY = 'fretline.latencyMs';
+const DEVICE_KEY = 'fretline.inputDevice';
+const TUNING_KEY = 'fretline.tuning';
 
 function read(key) {
   try {
@@ -39,12 +43,33 @@ export function saveBest(songId, speed, score, stars) {
   return true;
 }
 
-export function getLatencyMs() {
-  const n = Number(read(LATENCY_KEY));
-  return Number.isFinite(n) ? n : 0;
+const latencyKey = (deviceId) => `${LATENCY_KEY}.${deviceId || 'default'}`;
+
+/** Latency for one input device. Falls back to the old single value saved before devices were tracked. */
+export function getLatencyMs(deviceId = '') {
+  for (const key of [latencyKey(deviceId), LATENCY_KEY]) {
+    const raw = read(key);
+    const n = raw === null ? NaN : Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
 }
 
-export const setLatencyMs = (ms) => write(LATENCY_KEY, String(Math.round(ms)));
+export const setLatencyMs = (ms, deviceId = '') => write(latencyKey(deviceId), String(Math.round(ms)));
+
+export const getInputDevice = () => read(DEVICE_KEY) ?? '';
+
+export const setInputDevice = (deviceId) => write(DEVICE_KEY, deviceId);
+
+export function getTuning() {
+  try {
+    return normalizeTuning(JSON.parse(read(TUNING_KEY)));
+  } catch {
+    return normalizeTuning(null);
+  }
+}
+
+export const setTuning = (tuning) => write(TUNING_KEY, JSON.stringify(normalizeTuning(tuning)));
 
 export function getSpeed() {
   const n = Number(read(SPEED_KEY));

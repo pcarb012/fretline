@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatCents, fretMidi, hzToMidiFloat, midiToHz, noteName, splitMidi, STANDARD_TUNING } from '../src/logic/music.js';
-import { rms, toNote } from '../src/logic/pitch.js';
+import { rejectReason, rms, toNote } from '../src/logic/pitch.js';
 
 describe('Hz to MIDI and cents', () => {
   it('maps A440 to MIDI 69', () => {
@@ -72,5 +72,24 @@ describe('formatCents', () => {
     expect(formatCents(0.2)).toBe('0');
     expect(formatCents(12.6)).toBe('+13');
     expect(formatCents(-7.2)).toBe('-7');
+  });
+});
+
+describe('rejectReason and custom thresholds', () => {
+  it('names why a reading was rejected', () => {
+    expect(rejectReason(220, 0.99, 0.1)).toBeNull();
+    expect(rejectReason(220, 0.99, 0.005)).toBe('gate');
+    expect(rejectReason(220, 0.5, 0.1)).toBe('clarity');
+    expect(rejectReason(5000, 0.99, 0.1)).toBe('range');
+    expect(rejectReason(NaN, 0.99, 0.1)).toBe('range');
+  });
+  it('reports the quiet gate before clarity', () => {
+    expect(rejectReason(220, 0.1, 0.001)).toBe('gate');
+  });
+  it('uses a custom gate and clarity minimum', () => {
+    expect(toNote(220, 0.85, 0.05)).toBeNull();
+    expect(toNote(220, 0.85, 0.05, 0.01, 0.8)).not.toBeNull();
+    expect(toNote(220, 0.99, 0.005, 0.001)).not.toBeNull();
+    expect(rejectReason(220, 0.85, 0.05, 0.01, 0.8)).toBeNull();
   });
 });

@@ -170,3 +170,16 @@ describe('session', () => {
     expect(s.summary().stars).toBe(3);
   });
 });
+
+describe('session tolerance option', () => {
+  it('matches a sharp onset only when the tolerance allows it', () => {
+    const tight = createSession(mini, 1, { toleranceCents: 20 });
+    expect(tight.onOnset({ time: 0, midiFloat: 40.35 })).toBeNull();
+    const loose = createSession(mini, 1, { toleranceCents: 60 });
+    expect(loose.onOnset({ time: 0, midiFloat: 40.35 })).toMatchObject({ index: 0, grade: 'perfect' });
+  });
+  it('defaults to 50 cents', () => {
+    const s = createSession(mini, 1);
+    expect(s.onOnset({ time: 0, midiFloat: 40.45 })).not.toBeNull();
+  });
+});

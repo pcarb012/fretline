@@ -2,7 +2,8 @@ import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.j
 import { createOnsetTracker } from '../logic/onsets.js';
 import { createSession } from '../logic/session.js';
 import { COUNT_IN_BEATS, beatSeconds, songLengthSeconds } from '../logic/song.js';
-import { getLatencyMs, saveBest } from '../store.js';
+import { getInputDevice, getLatencyMs, saveBest } from '../store.js';
+import { activeTuning, beginRun } from './debugState.js';
 import { backButton, h, micError } from './dom.js';
 import { drawHighway } from './highway.js';
 
@@ -15,18 +16,25 @@ function scheduleCountIn(songStart, beatSec) {
   }
 }
 
-function run(root, go, { song, speed }, ui) {
+function finishRun(go, song, speed, session) {
+  const summary = session.summary();
+  const isBest = saveBest(song.id, speed, summary.score, summary.stars);
+  go('results', { song, speed, summary, isBest });
+}
+
+function run(root, go, { song, speed }, ui, dbg) {
   const audio = getContext();
   const beatSec = beatSeconds(song.bpm, speed);
   const songStart = audio.currentTime + START_DELAY_S + COUNT_IN_BEATS * beatSec;
-  const latencyS = getLatencyMs() / 1000;
-  const session = createSession(song, speed);
+  const latencyS = getLatencyMs(getInputDevice()) / 1000;
+  const session = createSession(song, speed, { toleranceCents: activeTuning().toleranceCents });
   const tracker = createOnsetTracker();
   const labels = [];
   let rafId = 0;
   let stopped = false;
 
   scheduleCountIn(songStart, beatSec);
+  dbg.setStart(songStart, audio.sampleRate);
 
   // What the player sees and hears lags the audio clock by the output latency.
   const visualNow = () => audio.currentTime - (audio.outputLatency || 0) - songStart;
@@ -36,23 +44,22 @@ function run(root, go, { song, speed }, ui) {
   const offFrame = onFrame(({ time, note }) => {
     ui.detected.textContent = note ? note.name : '';
     const onset = tracker.push({ time: time - latencyS - songStart, note });
-    const verdict = onset && session.onOnset(onset);
+    if (!onset) return;
+    const verdict = session.onOnset(onset);
+    dbg.onset(onset, verdict);
     if (verdict) addLabel(verdict);
   });
-
-  function finish() {
-    const summary = session.summary();
-    const isBest = saveBest(song.id, speed, summary.score, summary.stars);
-    go('results', { song, speed, summary, isBest });
-  }
 
   function loop() {
     if (stopped) return;
     const now = audio.currentTime - songStart;
-    for (const r of session.tick(now)) addLabel(r);
+    for (const r of session.tick(now)) {
+      addLabel(r);
+      dbg.miss(r.index, session.times[r.index]);
+    }
     ui.count.textContent = now < 0 ? String(Math.ceil(-now / beatSec)) : '';
     drawHighway(ui.canvas, { song, beatSec, now: visualNow(), results: session.results, labels });
-    if (now > songLengthSeconds(song, speed) + TAIL_S) return finish();
+    if (now > songLengthSeconds(song, speed) + TAIL_S) return finishRun(go, song, speed, session);
     rafId = requestAnimationFrame(loop);
   }
   rafId = requestAnimationFrame(loop);
@@ -78,16 +85,24 @@ export function mountPlay(root, go, args) {
     ui.canvas,
     status,
   );
+  const deviceId = getInputDevice();
+  const dbg = beginRun({
+    songId: args.song.id,
+    speed: args.speed,
+    deviceId,
+    latencyMs: getLatencyMs(deviceId),
+  });
   let stop = null;
   let gone = false;
   startMic()
     .then(() => {
-      if (!gone) stop = run(root, go, args, ui);
+      if (!gone) stop = run(root, go, args, ui, dbg);
     })
     .catch((err) => status.append(micError(err)));
   return () => {
     gone = true;
     if (stop) stop();
+    dbg.stop();
     stopMic();
   };
 }

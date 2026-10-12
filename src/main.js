@@ -4,6 +4,8 @@ import { mountPlay } from './ui/play.js';
 import { mountResults } from './ui/results.js';
 import { mountTuner } from './ui/tuner.js';
 import { mountCalibrate } from './ui/calibrate.js';
+import { mountDebugPanel } from './ui/debugPanel.js';
+import { initDebug, isDebug } from './ui/debugState.js';
 
 const root = document.getElementById('app');
 const screens = {
@@ -23,4 +25,6 @@ function go(name, args = {}) {
   cleanup = screens[name](main, go, args) ?? null;
 }
 
+initDebug();
+if (isDebug()) mountDebugPanel();
 go('list');

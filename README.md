@@ -37,9 +37,24 @@ Notes are placed one after another. For gaps or chords, write the objects by han
 
 `src/songs/blues/*.json` come from the Blues Masterclass .gp5 files. Rebuild them with `npm run lessons` (needs `uv` and the guitar-pro-mcp project; see `tools/gp2fretline.py`). Lesson N+1 unlocks after one star on lesson N. Notes marked `judge: false` (dead, ghost and the lower notes of double stops) are drawn in outline and not scored.
 
+## Debug mode and replay tests
+
+Add `?debug` to the address (for example http://localhost:3939/?debug) to show a panel with:
+
+- live pitch, clarity and level, and why a frame was rejected
+- sliders for the clarity minimum, level gate and pitch tolerance (saved in the browser, applied to detection and judging)
+- a "Record take" box; with it ticked, the next play is saved as a 16-bit mono WAV
+
+The results screen then offers "Download session log" (JSON of every frame and judging event) and "Download take". On the calibrate screen, pick the input device; latency is stored per device.
+
+`npm run e2e` makes synthetic recordings of two exercises and replays them through Chrome's fake microphone; both must score 100%.
+To replay any recording: `node e2e/replay.mjs <wav> <songId> [--speed 0.5] [--pad-ms 40] [--record-take out.wav] [--save-log out.json]`.
+Make test audio with `node e2e/genwav.mjs <songId> <out.wav>`. Real takes go in `e2e/fixtures/` (not committed).
+
 ## Layout
 
 - `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session)
 - `src/audio/` microphone, AudioWorklet, pitch detection (`pitchy`), click sound
 - `src/ui/` screens and the canvas highway
 - `tests/` Vitest tests
+- `e2e/` Playwright fake-microphone scripts

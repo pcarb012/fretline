@@ -2,8 +2,8 @@ export const PERFECT_S = 0.06;
 export const GOOD_S = 0.14;
 export const PITCH_TOLERANCE_CENTS = 50;
 
-export function pitchMatches(expectedMidi, midiFloat) {
-  return Math.abs(midiFloat - expectedMidi) * 100 <= PITCH_TOLERANCE_CENTS;
+export function pitchMatches(expectedMidi, midiFloat, toleranceCents = PITCH_TOLERANCE_CENTS) {
+  return Math.abs(midiFloat - expectedMidi) * 100 <= toleranceCents;
 }
 
 /** dt = detected time minus expected time, in seconds. Negative is early. */
@@ -14,7 +14,7 @@ export function judgeTiming(dt) {
   return { grade: 'miss', label: 'Miss' };
 }
 
-export function judgeNote({ expectedMidi, midiFloat, dt }) {
-  if (!pitchMatches(expectedMidi, midiFloat)) return { grade: 'miss', label: 'Miss' };
+export function judgeNote({ expectedMidi, midiFloat, dt, toleranceCents }) {
+  if (!pitchMatches(expectedMidi, midiFloat, toleranceCents)) return { grade: 'miss', label: 'Miss' };
   return judgeTiming(dt);
 }

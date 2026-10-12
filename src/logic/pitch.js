@@ -11,10 +11,17 @@ export function rms(samples) {
   return Math.sqrt(sum / samples.length);
 }
 
+/** Why a raw reading is not trusted: 'gate' (too quiet), 'clarity', 'range', or null when it is fine. */
+export function rejectReason(hz, clarity, level, gate = RMS_GATE, clarityMin = CLARITY_MIN) {
+  if (!(level > gate)) return 'gate';
+  if (!(clarity > clarityMin)) return 'clarity';
+  if (!(hz >= HZ_MIN && hz <= HZ_MAX)) return 'range';
+  return null;
+}
+
 /** Turn a raw detector reading into a note, or null when it is not trustworthy. */
-export function toNote(hz, clarity, level, gate = RMS_GATE) {
-  if (!(clarity > CLARITY_MIN) || !(level > gate)) return null;
-  if (!(hz >= HZ_MIN && hz <= HZ_MAX)) return null;
+export function toNote(hz, clarity, level, gate = RMS_GATE, clarityMin = CLARITY_MIN) {
+  if (rejectReason(hz, clarity, level, gate, clarityMin)) return null;
   const midiFloat = hzToMidiFloat(hz);
   const { midi, cents } = splitMidi(midiFloat);
   return { hz, midiFloat, midi, cents, name: noteName(midi), clarity, rms: level };

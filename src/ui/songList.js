@@ -1,7 +1,7 @@
 import { EXERCISES, LESSONS, LOAD_FAILURES } from '../songs/index.js';
 import { SPEEDS, hasUnscoredDoubleStops, loadNotice } from '../logic/song.js';
 import { isUnlocked } from '../logic/unlock.js';
-import { allBest, getBest, getLatencyMs, getSpeed, setSpeed } from '../store.js';
+import { allBest, getBest, getInputDevice, getLatencyMs, getSpeed, setSpeed } from '../store.js';
 import { h, starsEl } from './dom.js';
 
 const LESSON_IDS = LESSONS.map((l) => l.id);
@@ -53,7 +53,7 @@ export function mountSongList(root, go) {
     h('p', { class: 'lede' }, 'Fretline listens to your guitar and scores each note as it crosses the line.'),
     h('div', { class: 'row' },
       h('button', { onclick: () => go('tuner') }, 'Tuner'),
-      h('button', { onclick: () => go('calibrate') }, `Calibrate latency (${getLatencyMs()} ms)`)),
+      h('button', { onclick: () => go('calibrate') }, `Calibrate latency (${getLatencyMs(getInputDevice())} ms)`)),
     h('div', { class: 'label' }, 'Speed'),
     speedRow,
     LOAD_FAILURES.length ? h('div', { class: 'notice error' }, loadNotice(LOAD_FAILURES)) : null,

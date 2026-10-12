@@ -2,3 +2,6 @@ node_modules
 dist
 coverage
 __pycache__
+e2e/fixtures/
+e2e/out/
+*.wav

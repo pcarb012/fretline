@@ -1,3 +1,4 @@
+import { debugDownloads } from './debugPanel.js';
 import { h, starsEl } from './dom.js';
 
 export function mountResults(root, go, { song, speed, summary, isBest }) {
@@ -17,5 +18,6 @@ export function mountResults(root, go, { song, speed, summary, isBest }) {
     h('div', { class: 'row' },
       h('button', { class: 'primary', onclick: () => go('play', { song, speed }) }, 'Play again'),
       h('button', { onclick: () => go('list') }, 'All songs')),
+    debugDownloads(),
   );
 }
