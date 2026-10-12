@@ -1,59 +1,99 @@
 const PX_PER_BEAT = 150;
 const HIT_X_RATIO = 0.2;
 const NOTE_H = 30;
+const NOTE_R = 6;
 const LABEL_LIFE_S = 0.9;
 const LABEL_HOLD = 0.6;
 const COLORS = {
-  bg: '#faf9f5', text: '#141413', rule: '#b0aea5', band: '#e8e6dc',
-  orange: '#d97757', blue: '#6a9bcc', green: '#788c5d', greenDark: '#4d5f36',
+  ink: '#1a1714', text: '#efe6d2', dim: '#9a8f7c', band: '#26221d',
+  plate: '#e9dfc8', amber: '#ffb547', green: '#a6e36b', red: '#ff5a3c',
+  steel: '#d8d4cc', bronze: '#c9a46a',
 };
-const LABEL_COLOR = { perfect: COLORS.greenDark, good: COLORS.text, miss: COLORS.text };
-const GRADE_FILL = { perfect: COLORS.green, good: COLORS.orange, miss: COLORS.band };
+const LABEL_COLOR = { perfect: COLORS.green, good: COLORS.amber, miss: COLORS.red };
+const GRADE_FILL = { perfect: COLORS.green, good: COLORS.amber, miss: COLORS.band };
+const FONT = '"Bricolage Grotesque", "Segoe UI", sans-serif';
+const MONO = '"Martian Mono", Consolas, monospace';
 
 const laneY = (string, h) => (string - 0.5) * (h / 6);
+// String 1 (high e) is thinnest; 4-6 are wound.
+const gauge = (string) => 0.8 + (string - 1) * 0.55;
 
-function drawLanes(g, w, h, hitX) {
-  g.strokeStyle = COLORS.rule;
-  g.lineWidth = 1;
+function drawStrings(g, w, h) {
   for (let s = 1; s <= 6; s++) {
-    const y = Math.round(laneY(s, h)) + 0.5;
+    const y = laneY(s, h);
+    const lw = gauge(s);
+    g.lineWidth = lw;
+    g.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    g.beginPath();
+    g.moveTo(0, y + lw + 1);
+    g.lineTo(w, y + lw + 1);
+    g.stroke();
+    g.strokeStyle = s >= 4 ? COLORS.bronze : COLORS.steel;
+    g.globalAlpha = 0.75;
     g.beginPath();
     g.moveTo(0, y);
     g.lineTo(w, y);
     g.stroke();
+    g.globalAlpha = 1;
   }
-  g.strokeStyle = COLORS.orange;
-  g.lineWidth = 4;
-  g.beginPath();
-  g.moveTo(hitX, 0);
-  g.lineTo(hitX, h);
-  g.stroke();
 }
 
-function drawUnjudged(g, note, x, y, width) {
-  g.strokeStyle = COLORS.blue;
-  g.lineWidth = 2;
-  g.strokeRect(x + 1, y - NOTE_H / 2 + 1, width - 2, NOTE_H - 2);
-  g.fillStyle = COLORS.text;
-  g.font = '600 16px Poppins, Arial, sans-serif';
+function drawHitLine(g, h, hitX) {
+  g.fillStyle = 'rgba(255, 181, 71, 0.06)';
+  g.fillRect(hitX - 24, 0, 48, h);
+  g.save();
+  g.shadowColor = COLORS.amber;
+  g.shadowBlur = 18;
+  g.fillStyle = COLORS.amber;
+  g.fillRect(hitX - 2, 0, 4, h);
+  g.restore();
+}
+
+function plate(g, x, y, width) {
+  g.beginPath();
+  g.roundRect(x, y - NOTE_H / 2, width, NOTE_H, NOTE_R);
+}
+
+function fretText(g, note, x, y, width, color) {
+  g.fillStyle = color;
+  g.font = `700 17px ${FONT}`;
   g.textBaseline = 'middle';
   g.fillText(String(note.fret), Math.min(Math.max(x + 10, 6), x + width - 16), y + 1);
 }
 
+function drawUnjudged(g, note, x, y, width) {
+  g.setLineDash([4, 4]);
+  g.strokeStyle = COLORS.plate;
+  g.lineWidth = 1.5;
+  plate(g, x + 1, y, width - 2);
+  g.stroke();
+  g.setLineDash([]);
+  fretText(g, note, x, y, width, COLORS.text);
+}
+
 function drawNote(g, note, x, y, width, result) {
   if (note.judge === false) return drawUnjudged(g, note, x, y, width);
-  g.fillStyle = result ? GRADE_FILL[result.grade] : COLORS.blue;
-  g.fillRect(x, y - NOTE_H / 2, width, NOTE_H);
-  if (result && result.grade === 'miss') {
-    g.strokeStyle = COLORS.rule;
-    g.lineWidth = 1;
-    g.strokeRect(x + 0.5, y - NOTE_H / 2 + 0.5, width - 1, NOTE_H - 1);
+  const grade = result ? result.grade : null;
+  g.save();
+  if (grade === 'perfect' || grade === 'good') {
+    g.shadowColor = GRADE_FILL[grade];
+    g.shadowBlur = 16;
+  } else {
+    g.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    g.shadowBlur = 6;
+    g.shadowOffsetY = 2;
   }
-  g.fillStyle = result && result.grade !== 'miss' ? COLORS.bg : COLORS.text;
-  g.font = '600 18px Poppins, Arial, sans-serif';
-  g.textBaseline = 'middle';
-  const textX = Math.min(Math.max(x + 10, 6), x + width - 16);
-  g.fillText(String(note.fret), textX, y + 1);
+  g.fillStyle = grade ? GRADE_FILL[grade] : COLORS.plate;
+  plate(g, x, y, width);
+  g.fill();
+  g.restore();
+  if (grade === 'miss') {
+    g.strokeStyle = 'rgba(255, 90, 60, 0.5)';
+    g.lineWidth = 1;
+    plate(g, x + 0.5, y, width - 1);
+    g.stroke();
+  }
+  fretText(g, note, x, y, width, grade === 'miss' ? COLORS.dim : COLORS.ink);
 }
 
 function drawNotes(g, w, h, hitX, frame) {
@@ -68,19 +108,19 @@ function drawNotes(g, w, h, hitX, frame) {
 
 function drawSections(g, w, hitX, frame) {
   const { song, beatSec, now } = frame;
-  g.font = '600 13px Poppins, Arial, sans-serif';
+  g.font = `500 11px ${MONO}`;
   g.textBaseline = 'top';
-  g.fillStyle = COLORS.orange;
+  g.fillStyle = COLORS.amber;
   for (const sec of song.sections ?? []) {
     const x = hitX + ((sec.beat * beatSec - now) / beatSec) * PX_PER_BEAT;
     if (x > w || x + g.measureText(sec.name).width < 0) continue;
-    g.fillRect(x, 0, 2, 14);
-    g.fillText(sec.name, x + 6, 1);
+    g.fillRect(x, 0, 2, 16);
+    g.fillText(sec.name, x + 6, 3);
   }
 }
 
 function drawLabels(g, h, hitX, frame) {
-  g.font = '600 20px Poppins, Arial, sans-serif';
+  g.font = `700 20px ${FONT}`;
   g.textBaseline = 'middle';
   for (const l of frame.labels) {
     const age = frame.now - l.at;
@@ -109,7 +149,8 @@ export function drawHighway(canvas, frame) {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
   const hitX = w * HIT_X_RATIO;
-  drawLanes(g, w, h, hitX);
+  drawStrings(g, w, h);
+  drawHitLine(g, h, hitX);
   drawNotes(g, w, h, hitX, frame);
   drawSections(g, w, hitX, frame);
   drawLabels(g, h, hitX, frame);

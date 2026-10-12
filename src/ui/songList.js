@@ -56,7 +56,7 @@ export function mountSongList(root, go) {
       h('button', { onclick: () => go('calibrate') }, `Calibrate latency (${getLatencyMs(getInputDevice())} ms)`)),
     h('div', { class: 'label' }, 'Speed'),
     speedRow,
-    LOAD_FAILURES.length ? h('div', { class: 'notice error' }, loadNotice(LOAD_FAILURES)) : null,
+    LOAD_FAILURES.length ? h('div', { class: 'notice error' }, loadNotice(LOAD_FAILURES)) : '',
     h('div', { class: 'label' }, 'Exercises'),
     exercises,
     h('div', { class: 'label' }, 'Blues Masterclass lessons'),
