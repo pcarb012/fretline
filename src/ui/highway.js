@@ -30,7 +30,18 @@ function drawLanes(g, w, h, hitX) {
   g.stroke();
 }
 
+function drawUnjudged(g, note, x, y, width) {
+  g.strokeStyle = COLORS.blue;
+  g.lineWidth = 2;
+  g.strokeRect(x + 1, y - NOTE_H / 2 + 1, width - 2, NOTE_H - 2);
+  g.fillStyle = COLORS.text;
+  g.font = '600 16px Poppins, Arial, sans-serif';
+  g.textBaseline = 'middle';
+  g.fillText(String(note.fret), Math.min(Math.max(x + 10, 6), x + width - 16), y + 1);
+}
+
 function drawNote(g, note, x, y, width, result) {
+  if (note.judge === false) return drawUnjudged(g, note, x, y, width);
   g.fillStyle = result ? GRADE_FILL[result.grade] : COLORS.blue;
   g.fillRect(x, y - NOTE_H / 2, width, NOTE_H);
   if (result && result.grade === 'miss') {
@@ -53,6 +64,19 @@ function drawNotes(g, w, h, hitX, frame) {
     if (x + width < 0 || x > w) return;
     drawNote(g, note, x, laneY(note.string, h), width, results[i]);
   });
+}
+
+function drawSections(g, w, hitX, frame) {
+  const { song, beatSec, now } = frame;
+  g.font = '600 13px Poppins, Arial, sans-serif';
+  g.textBaseline = 'top';
+  g.fillStyle = COLORS.orange;
+  for (const sec of song.sections ?? []) {
+    const x = hitX + ((sec.beat * beatSec - now) / beatSec) * PX_PER_BEAT;
+    if (x > w || x + g.measureText(sec.name).width < 0) continue;
+    g.fillRect(x, 0, 2, 14);
+    g.fillText(sec.name, x + 6, 1);
+  }
 }
 
 function drawLabels(g, h, hitX, frame) {
@@ -87,5 +111,6 @@ export function drawHighway(canvas, frame) {
   const hitX = w * HIT_X_RATIO;
   drawLanes(g, w, h, hitX);
   drawNotes(g, w, h, hitX, frame);
+  drawSections(g, w, hitX, frame);
   drawLabels(g, h, hitX, frame);
 }

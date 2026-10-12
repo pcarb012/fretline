@@ -1,5 +1,5 @@
 import { GOOD_S, judgeNote, pitchMatches } from './judge.js';
-import { expectedMidiList, noteTimes } from './song.js';
+import { expectedMidiList, isJudged, judgedCount, noteTimes } from './song.js';
 import { countGrades, maxScore, starsFor, totalScore } from './score.js';
 
 /** Extra time to wait for a late-arriving detection before calling a miss. */
@@ -13,11 +13,12 @@ export function createSession(song, speed = 1) {
   const times = noteTimes(song, speed);
   const midis = expectedMidiList(song);
   const results = new Array(times.length).fill(null);
+  const judged = song.notes.map(isJudged);
 
   function bestCandidate(onset) {
     return times
       .map((t, i) => ({ i, dt: onset.time - t }))
-      .filter(({ i, dt }) => results[i] === null && Math.abs(dt) <= GOOD_S)
+      .filter(({ i, dt }) => judged[i] && results[i] === null && Math.abs(dt) <= GOOD_S)
       .filter(({ i }) => pitchMatches(midis[i], onset.midiFloat))
       .sort((a, b) => Math.abs(a.dt) - Math.abs(b.dt))[0];
   }
@@ -35,7 +36,7 @@ export function createSession(song, speed = 1) {
     tick(now) {
       const missed = [];
       times.forEach((t, i) => {
-        if (results[i] === null && now > t + GOOD_S + MISS_GRACE_S) {
+        if (judged[i] && results[i] === null && now > t + GOOD_S + MISS_GRACE_S) {
           results[i] = { grade: 'miss', label: 'Miss', dt: null };
           missed.push({ index: i, ...results[i] });
         }
@@ -43,9 +44,9 @@ export function createSession(song, speed = 1) {
       return missed;
     },
     summary() {
-      const grades = results.map((r) => r?.grade ?? 'miss');
+      const grades = results.filter((_, i) => judged[i]).map((r) => r?.grade ?? 'miss');
       const score = totalScore(grades);
-      const max = maxScore(times.length);
+      const max = maxScore(judgedCount(song));
       return { score, max, stars: starsFor(score, max), counts: countGrades(grades) };
     },
   };

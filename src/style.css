@@ -90,3 +90,5 @@ canvas { display: block; width: 100%; height: 360px; background: var(--bg); bord
   .song { flex-direction: column; align-items: flex-start; }
   .big { font-size: 56px; }
 }
+
+.song.locked { opacity: 0.55; }

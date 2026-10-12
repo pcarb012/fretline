@@ -1,4 +1,7 @@
-// Original exercises plus a public-domain melody (Beethoven, "Ode to Joy").
+// Original exercises plus a public-domain melody (Beethoven, "Ode to Joy"),
+// and the Blues Masterclass lessons converted by tools/gp2fretline.py.
+import { partitionSongs } from '../logic/song.js';
+
 // Each row is [string, fret, durationBeats]; beats are laid end to end.
 const TUNING = [40, 45, 50, 55, 59, 64];
 
@@ -32,9 +35,19 @@ const ode = [
   ...phraseA, [...D, 1.5], [...C, 0.5], [...C, 2],
 ];
 
-export const SONGS = [
+const exerciseList = [
   build('open-strings', 'Open strings', 70, openStrings),
   build('chromatic-low-e', 'Chromatic, low E frets 1-4', 70, chromatic),
   build('c-major-scale', 'C major scale, first position', 80, cScale),
   build('ode-to-joy', 'Ode to Joy', 90, ode),
 ];
+
+const lessonFiles = import.meta.glob('./blues/*.json', { eager: true, import: 'default' });
+const lessonList = Object.keys(lessonFiles).sort().map((path) => lessonFiles[path]);
+
+// Songs that fail validation are dropped; the song list shows which ones.
+const exercises = partitionSongs(exerciseList);
+const lessons = partitionSongs(lessonList);
+export const EXERCISES = exercises.valid;
+export const LESSONS = lessons.valid;
+export const LOAD_FAILURES = [...exercises.failedIds, ...lessons.failedIds];
