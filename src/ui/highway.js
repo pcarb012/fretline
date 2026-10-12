@@ -71,8 +71,8 @@ function drawUnjudged(g, note, x, y, width) {
   fretText(g, note, x, y, width, COLORS.text);
 }
 
-function drawNote(g, note, x, y, width, result) {
-  if (note.judge === false) return drawUnjudged(g, note, x, y, width);
+function drawNote(g, note, x, y, width, result, inChord) {
+  if (note.judge === false && !inChord) return drawUnjudged(g, note, x, y, width);
   const grade = result ? result.grade : null;
   g.save();
   if (grade === 'perfect' || grade === 'good') {
@@ -98,12 +98,32 @@ function drawNote(g, note, x, y, width, result) {
 
 function drawNotes(g, w, h, hitX, frame) {
   const { song, beatSec, now, results } = frame;
+  const scoredChord = new Set((frame.chords ?? []).filter((c) => c.scored >= 0).flatMap((c) => c.members));
   song.notes.forEach((note, i) => {
     const x = hitX + ((note.beat * beatSec - now) / beatSec) * PX_PER_BEAT;
     const width = Math.max(40, note.durationBeats * PX_PER_BEAT - 8);
     if (x + width < 0 || x > w) return;
-    drawNote(g, note, x, laneY(note.string, h), width, results[i]);
+    drawNote(g, note, x, laneY(note.string, h), width, results[i], scoredChord.has(i));
   });
+}
+
+/** A chord's name goes on the right end of its top plate, clear of the fret number. */
+function drawChordNames(g, w, h, hitX, frame) {
+  const { song, beatSec, now, results } = frame;
+  g.font = `700 13px ${MONO}`;
+  g.textBaseline = 'middle';
+  g.textAlign = 'right';
+  for (const chord of frame.chords ?? []) {
+    if (!chord.name || chord.scored < 0) continue;
+    const top = chord.members.reduce((a, b) => (song.notes[b].string < song.notes[a].string ? b : a));
+    const note = song.notes[top];
+    const x = hitX + ((note.beat * beatSec - now) / beatSec) * PX_PER_BEAT;
+    const width = Math.max(40, note.durationBeats * PX_PER_BEAT - 8);
+    if (width < 80 || x + width < 0 || x > w) continue;
+    g.fillStyle = results[top]?.grade === 'miss' ? COLORS.dim : COLORS.ink;
+    g.fillText(chord.name, x + width - 10, laneY(note.string, h) + 1);
+  }
+  g.textAlign = 'left';
 }
 
 function drawSections(g, w, hitX, frame) {
@@ -134,7 +154,7 @@ function drawLabels(g, h, hitX, frame) {
 }
 
 /**
- * Draw one frame. frame = { song, beatSec, now, results, labels }.
+ * Draw one frame. frame = { song, beatSec, now, results, labels, chords }.
  * now is seconds from song beat 0 (negative during the count-in).
  */
 export function drawHighway(canvas, frame) {
@@ -153,5 +173,6 @@ export function drawHighway(canvas, frame) {
   drawHitLine(g, h, hitX);
   drawNotes(g, w, h, hitX, frame);
   drawSections(g, w, hitX, frame);
+  drawChordNames(g, w, h, hitX, frame);
   drawLabels(g, h, hitX, frame);
 }

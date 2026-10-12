@@ -4,6 +4,7 @@ import { mountPlay } from './ui/play.js';
 import { mountResults } from './ui/results.js';
 import { mountTuner } from './ui/tuner.js';
 import { mountCalibrate } from './ui/calibrate.js';
+import { mountChordCalibrate } from './ui/chordCalibrate.js';
 import { mountUpload } from './ui/upload.js';
 import { mountDebugPanel } from './ui/debugPanel.js';
 import { initDebug, isDebug } from './ui/debugState.js';
@@ -15,6 +16,7 @@ const screens = {
   results: mountResults,
   tuner: mountTuner,
   calibrate: mountCalibrate,
+  chords: mountChordCalibrate,
   upload: mountUpload,
 };
 let cleanup = null;

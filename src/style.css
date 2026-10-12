@@ -181,6 +181,22 @@ canvas {
   color: var(--amber); text-shadow: 0 0 30px rgb(255 160 50 / 0.7);
 }
 
+/* Chord calibration. */
+.chord-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 10px; margin: 24px 0; }
+.chord-grid button { padding: 11px 8px; }
+.chord-grid button.done:not(.on) { color: var(--plate-ink); }
+.chord-grid small { color: #3e7a12; font-weight: 700; }
+.chord-grid button.on small { color: var(--green); }
+.chord-panel { background: var(--bg-2); border: 1px solid var(--rule); border-radius: 3px; padding: 20px 24px; }
+.chord-panel h3 { margin: 0 0 12px; font-family: var(--display); font-size: 56px; line-height: 1; color: var(--amber); }
+.shape { display: flex; gap: 6px; margin-bottom: 16px; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.shape span { display: flex; flex-direction: column; align-items: center; width: 28px; }
+.shape b { font-size: 20px; color: var(--text); }
+.dots { display: flex; gap: 8px; margin-bottom: 16px; }
+.dots span { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--rule); }
+.dots span.on { background: var(--green); border-color: var(--green); box-shadow: 0 0 10px rgb(166 227 107 / 0.5); }
+.heard { font-family: var(--mono); font-size: 13px; color: var(--dim); min-height: 1.4em; }
+
 /* Results. */
 .big {
   font-family: var(--display); font-weight: 900;

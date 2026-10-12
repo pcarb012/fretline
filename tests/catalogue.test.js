@@ -3,8 +3,8 @@ import { EXERCISES, LESSONS } from '../src/songs/index.js';
 import { hasUnscoredDoubleStops, validateSong } from '../src/logic/song.js';
 
 describe('song catalogue', () => {
-  it('has four exercises and twelve lessons, all valid', () => {
-    expect(EXERCISES).toHaveLength(4);
+  it('has six exercises and twelve lessons, all valid', () => {
+    expect(EXERCISES).toHaveLength(6);
     expect(LESSONS).toHaveLength(12);
     for (const s of [...EXERCISES, ...LESSONS]) expect(validateSong(s)).toBe(true);
   });
@@ -18,8 +18,10 @@ describe('song catalogue', () => {
   });
   it('flags double stops only on lessons with at least 10% unjudged notes', () => {
     const flagged = LESSONS.map((l, i) => (hasUnscoredDoubleStops(l) ? i + 1 : null)).filter(Boolean);
-    expect(flagged).toEqual([1, 4, 7, 8, 9, 10, 11, 12]);
+    // Lessons 8, 11 and 12 are mostly full chords, which are scored as a whole.
+    expect(flagged).toEqual([1, 4, 7, 9, 10]);
     expect(hasUnscoredDoubleStops(EXERCISES[0])).toBe(false);
+    expect(EXERCISES.filter((s) => s.id.endsWith('chords')).some(hasUnscoredDoubleStops)).toBe(false);
   });
   it('sits exactly on the 10% line', () => {
     const notes = (n, off) => Array.from({ length: n }, (_, i) => ({ judge: i >= off }));

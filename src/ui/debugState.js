@@ -46,7 +46,7 @@ function onTap(frame) {
   }
 }
 
-const NOOP_RUN = { setStart() {}, onset() {}, miss() {}, stop() {} };
+const NOOP_RUN = { setStart() {}, onset() {}, strum() {}, miss() {}, stop() {} };
 
 /**
  * Start logging a play. Call it before the mic opens so the take covers the whole run.
@@ -75,6 +75,14 @@ export function beginRun(meta) {
         event('verdict', onset.time, { index: verdict.index, label: verdict.label, dt: verdict.dt });
       } else {
         event('unmatched', onset.time, { midiFloat: onset.midiFloat });
+      }
+    },
+    /** strum is a strum tracker result; verdict is the session answer or null. */
+    strum(strum, verdict) {
+      if (verdict) {
+        event('verdict', strum.time, { index: verdict.index, label: verdict.label, dt: verdict.dt, chord: verdict.name });
+      } else {
+        event('unmatched-strum', strum.time, {});
       }
     },
     miss(index, time) {

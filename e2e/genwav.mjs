@@ -1,7 +1,8 @@
-// Make a synthetic plucked-string recording of a song, to play through Chrome's fake microphone.
+// Make a synthetic plucked-string recording of a song (chords strummed), to play through Chrome's fake microphone.
 // usage: node e2e/genwav.mjs <songId> <out.wav> [extraLeadSec] [speed]
 import fs from 'node:fs';
 import path from 'node:path';
+import { chordGroups } from '../src/logic/chords.js';
 import { findSong } from './lib.mjs';
 
 const SR = 48000;
@@ -18,7 +19,7 @@ const total = lead + Math.max(...song.notes.map((n) => n.beat + n.durationBeats)
 const buf = new Float32Array(Math.ceil(total * SR));
 
 // Karplus-Strong pluck.
-function pluck(freq, start, dur) {
+function pluck(freq, start, dur, gain = 0.7) {
   const n = Math.round(SR / freq);
   const delay = new Float32Array(n).map(() => Math.random() * 2 - 1);
   for (let i = 1; i < n; i++) delay[i] = 0.5 * delay[i] + 0.5 * delay[i - 1];
@@ -30,14 +31,25 @@ function pluck(freq, start, dur) {
     const v = delay[idx];
     delay[idx] = 0.9965 * 0.5 * (delay[idx] + delay[next]);
     idx = next;
-    buf[first + i] += v * 0.7;
+    buf[first + i] += v * gain;
   }
 }
 
-// Notes marked judge:false (chord extras, dead notes) are skipped; only judged notes matter.
-for (const note of song.notes.filter((n) => n.judge !== false)) {
-  const midi = song.tuning[6 - note.string] + note.fret;
-  pluck(440 * 2 ** ((midi - 69) / 12), lead + note.beat * beatSec, Math.min(note.durationBeats * beatSec * 0.95, 1.5));
+const midiOf = (note) => song.tuning[6 - note.string] + note.fret;
+const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
+const length = (note) => Math.min(note.durationBeats * beatSec * 0.95, 1.5);
+
+// Scored chords are strummed low to high, 12 ms apart, with every string in them.
+const chords = chordGroups(song).filter((c) => c.scored >= 0);
+const inChord = new Set(chords.flatMap((c) => c.members));
+for (const chord of chords) {
+  const members = [...chord.members].sort((a, b) => midiOf(song.notes[a]) - midiOf(song.notes[b]));
+  members.forEach((i, k) => pluck(hz(midiOf(song.notes[i])), lead + chord.beat * beatSec + k * 0.012, length(song.notes[i]), 0.3));
+}
+// Other notes marked judge:false (double-stop extras, dead notes) are skipped; only judged notes matter.
+for (const [i, note] of song.notes.entries()) {
+  if (note.judge === false || inChord.has(i)) continue;
+  pluck(hz(midiOf(note)), lead + note.beat * beatSec, length(note));
 }
 
 const pcm = Buffer.alloc(buf.length * 2 + 44);
