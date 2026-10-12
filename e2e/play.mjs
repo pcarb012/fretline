@@ -9,6 +9,7 @@ const url = process.env.FRETLINE_URL ?? 'http://localhost:3939/';
 fs.mkdirSync('e2e/out', { recursive: true });
 
 const browser = await chromium.launch({
+  executablePath: process.env.FRETLINE_CHROMIUM || undefined,
   args: [
     '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream',

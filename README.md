@@ -47,7 +47,7 @@ Add `?debug` to the address (for example http://localhost:3939/?debug) to show a
 
 The results screen then offers "Download session log" (JSON of every frame and judging event) and "Download take". On the calibrate screen, pick the input device; latency is stored per device.
 
-`npm run e2e` makes synthetic recordings of two exercises and replays them through Chrome's fake microphone; both must score 100%.
+`npm run e2e` makes synthetic recordings of two exercises and replays them through Chrome's fake microphone; both must score 100%. Set `FRETLINE_CHROMIUM` to a Chrome/Chromium binary to use it instead of Playwright's bundled browser (Claude Code cloud sessions set this automatically).
 To replay any recording: `node e2e/replay.mjs <wav> <songId> [--speed 0.5] [--pad-ms 40] [--record-take out.wav] [--save-log out.json]`.
 Make test audio with `node e2e/genwav.mjs <songId> <out.wav>`. Real takes go in `e2e/fixtures/` (not committed).
 
