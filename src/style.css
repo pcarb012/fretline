@@ -20,7 +20,8 @@
 
 * { box-sizing: border-box; }
 
-html { background: var(--bg); }
+/* Reserve the scrollbar's space so it never shifts the page when it comes and goes. */
+html { background: var(--bg); scrollbar-gutter: stable; }
 
 body {
   margin: 0;
@@ -158,7 +159,8 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 /* Play screen. */
 .stage { position: relative; }
 canvas {
-  display: block; width: 100%; height: 380px;
+  /* Shrinks on short laptop screens so the Play screen fits without scrolling. */
+  display: block; width: 100%; height: clamp(260px, calc(100vh - 400px), 380px);
   border-radius: 4px;
   background:
     linear-gradient(180deg, rgb(0 0 0 / 0.45), transparent 18%, transparent 82%, rgb(0 0 0 / 0.45)),
@@ -166,9 +168,10 @@ canvas {
     linear-gradient(180deg, #2b1a12, #3a2318 50%, #2b1a12);
   box-shadow: 0 0 0 1px #000, 0 0 0 4px #2a2520, 0 24px 60px rgb(0 0 0 / 0.6);
 }
-.hud { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; gap: 16px; }
+/* Fixed height: the count-in digit coming and going must not move the highway. */
+.hud { display: flex; justify-content: space-between; align-items: center; height: 64px; margin-bottom: 16px; gap: 16px; }
 .detected {
-  font-family: var(--display); font-weight: 900; font-size: 64px; line-height: 1;
+  font-family: var(--display); font-weight: 900; font-size: 64px; line-height: 64px;
   height: 64px; min-width: 4ch; color: var(--text);
 }
 .count {
