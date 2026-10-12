@@ -1,3 +1,4 @@
+import { chordGroups } from './chords.js';
 import { fretMidi } from './music.js';
 
 export const SPEEDS = [0.5, 0.75, 1];
@@ -12,9 +13,15 @@ export const judgedCount = (song) => song.notes.filter(isJudged).length;
 
 export const DOUBLE_STOP_SHARE = 0.1;
 
-/** True when at least 10% of the notes are unjudged (some notes are not scored). */
-export const hasUnscoredDoubleStops = (song) =>
-  (song.notes.length - judgedCount(song)) / song.notes.length >= DOUBLE_STOP_SHARE;
+/**
+ * True when at least 10% of the notes are unjudged (some notes are not scored).
+ * Notes of a scored chord count as scored: the chord is judged as a whole.
+ */
+export function hasUnscoredDoubleStops(song) {
+  const inChord = new Set(chordGroups(song).filter((c) => c.scored >= 0).flatMap((c) => c.members));
+  const unscored = song.notes.filter((n, i) => !isJudged(n) && !inChord.has(i)).length;
+  return unscored / song.notes.length >= DOUBLE_STOP_SHARE;
+}
 
 export function expectedMidiList(song) {
   return song.notes.map((n) => fretMidi(song.tuning, n.string, n.fret));

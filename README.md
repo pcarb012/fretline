@@ -21,6 +21,15 @@ Use headphones for the click and plug a guitar into the computer, or hold the mi
 - A note is hit when the pitch is within 50 cents of the expected note (any string that gives the same pitch counts).
 - Timing: within 60 ms is Perfect (100 points), within 140 ms is Good (60 points, labelled Early or Late), anything else is a Miss.
 - Stars: 1 at 50% of the maximum, 2 at 75%, 3 at 90%.
+- Chords (three or more strings struck together, or a two-string power chord) are scored as one item, by strum. See below.
+
+## Chords
+
+Fretline hears a strum as a jump in level, then compares the next ~130 ms of sound with the chord it expects. It uses chroma: how much of each of the 12 note names is sounding. A strum counts when it is close to the expected chord and no other chord explains it clearly better. An extra note is forgiven, so an E7 strum passes for an E. A missing third is not, so an A5 strum does not pass for Am. A single plucked string never counts as a chord.
+
+**Calibrate chords** on the song list teaches it your guitar. Pick a chord, press **Strum**, and strum it 4 times (single downstrokes, about a second apart). It covers C, A, G, E, D, Am, Em, Dm, E7, A7, B7, E5 and A5. Templates are saved in the browser per input device. A calibrated chord also stands in for the same kind of chord on other roots: E5 serves every power chord, E7 every dominant seventh. Chords you skip use built-in sounds. After a strum, the screen shows which chord it heard, which is a quick way to check.
+
+Known limits: a power chord and the major chord on the same root sound almost the same (the major third is an overtone of the root), so an E5 can pass for an E. The Open chords and Power chords exercises are a good first test.
 
 ## Add a song
 
@@ -34,8 +43,8 @@ build('my-song', 'My song', 80, [
 ])
 ```
 
-Notes are placed one after another. For gaps or chords, write the objects by hand:
-`{ beat, string, fret, durationBeats }`. Standard tuning is `[40, 45, 50, 55, 59, 64]` (MIDI, low to high). The song-list screen picks it up automatically. Keep songs original or public domain.
+Notes are placed one after another. For gaps, write the objects by hand:
+`{ beat, string, fret, durationBeats }`. For strummed chords use `chordSong` with shapes like `'x32010'` (see the Open chords exercise). Standard tuning is `[40, 45, 50, 55, 59, 64]` (MIDI, low to high). The song-list screen picks it up automatically. Keep songs original or public domain.
 
 ## Upload tabs and backing tracks
 
@@ -63,13 +72,13 @@ Add `?debug` to the address (for example http://localhost:3939/?debug) to show a
 
 The results screen then offers "Download session log" (JSON of every frame and judging event) and "Download take". On the calibrate screen, pick the input device; latency is stored per device.
 
-`npm run e2e` makes synthetic recordings of two exercises and replays them through Chrome's fake microphone; both must score 100%. Set `FRETLINE_CHROMIUM` to a Chrome/Chromium binary to use it instead of Playwright's bundled browser (Claude Code cloud sessions set this automatically).
+`npm run e2e` makes synthetic recordings of four exercises (two single-note, two chord) and replays them through Chrome's fake microphone; each must score 100%. Keep e2e songs short: over ~20 s the fake microphone drifts against the audio clock and late notes slip to Good. Set `FRETLINE_CHROMIUM` to a Chrome/Chromium binary to use it instead of Playwright's bundled browser (Claude Code cloud sessions set this automatically).
 To replay any recording: `node e2e/replay.mjs <wav> <songId> [--speed 0.5] [--pad-ms 40] [--record-take out.wav] [--save-log out.json]`.
 Make test audio with `node e2e/genwav.mjs <songId> <out.wav>`. Real takes go in `e2e/fixtures/` (not committed).
 
 ## Layout
 
-- `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session)
+- `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session, chords, chroma, strums)
 - `src/audio/` microphone, AudioWorklet, pitch detection (`pitchy`), click sound
 - `src/library.js` uploaded songs and backing tracks (IndexedDB)
 - `src/ui/` screens and the canvas highway

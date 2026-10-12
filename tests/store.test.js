@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  getInputDevice, getLatencyMs, getTuning, setInputDevice, setLatencyMs, setTuning,
+  clearChordTemplates, getChordTemplates, getInputDevice, getLatencyMs, getTuning, setChordTemplate,
+  setInputDevice, setLatencyMs, setTuning,
 } from '../src/store.js';
 
 beforeEach(() => {
@@ -69,5 +70,25 @@ describe('blocked storage', () => {
     expect(getLatencyMs('x')).toBe(0);
     expect(getTuning().clarityMin).toBe(0.9);
     expect(() => setTuning({})).not.toThrow();
+  });
+});
+
+describe('chord templates per device', () => {
+  const t = (x) => new Array(12).fill(x);
+  it('saves, adds and clears templates for one device only', () => {
+    setChordTemplate('C', t(0.1), 'usb');
+    setChordTemplate('G', t(0.2), 'usb');
+    setChordTemplate('C', t(0.3));
+    expect(getChordTemplates('usb')).toEqual({ C: t(0.1), G: t(0.2) });
+    expect(getChordTemplates()).toEqual({ C: t(0.3) });
+    clearChordTemplates('usb');
+    expect(getChordTemplates('usb')).toEqual({});
+    expect(getChordTemplates('')).toEqual({ C: t(0.3) });
+  });
+  it('drops broken entries and survives bad JSON', () => {
+    localStorage.setItem('fretline.chords.usb', JSON.stringify({ C: t(0.1), G: [1, 2], D: 'x' }));
+    expect(getChordTemplates('usb')).toEqual({ C: t(0.1) });
+    localStorage.setItem('fretline.chords.usb', '{oops');
+    expect(getChordTemplates('usb')).toEqual({});
   });
 });

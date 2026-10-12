@@ -108,7 +108,8 @@ async function saveDownload(page, label, target) {
 
 async function readResults(page, song) {
   const score = Number(await page.locator('.big').innerText());
-  const max = song.notes.length * 100;
+  // Each scored chord is one item; its other notes are unjudged.
+  const max = song.notes.filter((n) => n.judge !== false).length * 100;
   const stars = await page.locator('.stars').getAttribute('aria-label');
   const log = await page.evaluate(() => window.__fretlineDebug.log());
   const byIndex = new Map();

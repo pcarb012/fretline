@@ -35,11 +35,34 @@ const ode = [
   ...phraseA, [...D, 1.5], [...C, 0.5], [...C, 2],
 ];
 
+// Chords: [shape, durationBeats], shape low E to high e ('x' muted). The top note is the
+// scored one, the rest are marked judge:false; the whole strum is judged as one chord.
+function chordSong(id, title, bpm, rows) {
+  let beat = 0;
+  const notes = rows.flatMap(([shape, durationBeats]) => {
+    const strings = [...shape].map((c, i) => [6 - i, c]).filter(([, c]) => c !== 'x');
+    const top = Math.min(...strings.map(([string]) => string));
+    const chord = strings.map(([string, c]) => ({
+      beat, string, fret: Number(c), durationBeats, ...(string === top ? {} : { judge: false }),
+    }));
+    beat += durationBeats;
+    return chord;
+  });
+  return { id, title, bpm, tuning: TUNING, notes };
+}
+
+const openChords = ['320003', 'x32010', 'xx0232', '022000', 'x02210', '022100', 'x02220', 'xx0231',
+  '020100', 'x02020', 'x21202', '022100'].map((shape) => [shape, 2]);
+// E5, G5, A5, C5, D5, E5: the E- and A-string shapes moved along the neck.
+const powerChords = ['022xxx', '355xxx', 'x022xx', 'x355xx', 'x577xx', '022xxx'].map((shape) => [shape, 2]);
+
 const exerciseList = [
   build('open-strings', 'Open strings', 70, openStrings),
   build('chromatic-low-e', 'Chromatic, low E frets 1-4', 70, chromatic),
   build('c-major-scale', 'C major scale, first position', 80, cScale),
   build('ode-to-joy', 'Ode to Joy', 90, ode),
+  chordSong('open-chords', 'Open chords', 70, openChords),
+  chordSong('power-chords', 'Power chords', 70, powerChords),
 ];
 
 const lessonFiles = import.meta.glob('./blues/*.json', { eager: true, import: 'default' });

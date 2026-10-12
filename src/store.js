@@ -77,3 +77,24 @@ export function getSpeed() {
 }
 
 export const setSpeed = (speed) => write(SPEED_KEY, String(speed));
+
+const CHORDS_KEY = 'fretline.chords';
+const chordsKey = (deviceId) => `${CHORDS_KEY}.${deviceId || 'default'}`;
+
+/** Calibrated chord templates for one input device: { chordName: [12 numbers] }. */
+export function getChordTemplates(deviceId = '') {
+  try {
+    const raw = JSON.parse(read(chordsKey(deviceId)));
+    if (!raw || typeof raw !== 'object') return {};
+    const ok = (v) => Array.isArray(v) && v.length === 12 && v.every(Number.isFinite);
+    return Object.fromEntries(Object.entries(raw).filter(([, v]) => ok(v)));
+  } catch {
+    return {};
+  }
+}
+
+export function setChordTemplate(name, template, deviceId = '') {
+  write(chordsKey(deviceId), JSON.stringify({ ...getChordTemplates(deviceId), [name]: template }));
+}
+
+export const clearChordTemplates = (deviceId = '') => write(chordsKey(deviceId), '{}');

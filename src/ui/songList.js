@@ -2,7 +2,10 @@ import { deleteSong, listSongs, trackIds } from '../library.js';
 import { EXERCISES, LESSONS, LOAD_FAILURES } from '../songs/index.js';
 import { SPEEDS, hasUnscoredDoubleStops, loadNotice } from '../logic/song.js';
 import { isUnlocked } from '../logic/unlock.js';
-import { allBest, getBest, getInputDevice, getLatencyMs, getSpeed, setSpeed } from '../store.js';
+import { CHORD_LIBRARY } from '../logic/chords.js';
+import {
+  allBest, getBest, getChordTemplates, getInputDevice, getLatencyMs, getSpeed, setSpeed,
+} from '../store.js';
 import { h, starsEl } from './dom.js';
 
 const LESSON_IDS = LESSONS.map((l) => l.id);
@@ -27,6 +30,11 @@ function songRow(song, go, speed, { locked = false, hasTrack = false, onDelete =
     h('div', { class: 'row' }, starsEl(best ? best.stars : 0), track, remove, action),
   );
 }
+
+const chordsDone = () => {
+  const saved = getChordTemplates(getInputDevice());
+  return CHORD_LIBRARY.filter((c) => saved[c.name]).length;
+};
 
 export function mountSongList(root, go) {
   let speed = getSpeed();
@@ -79,6 +87,7 @@ export function mountSongList(root, go) {
     h('div', { class: 'row' },
       h('button', { onclick: () => go('tuner') }, 'Tuner'),
       h('button', { onclick: () => go('calibrate') }, `Calibrate latency (${getLatencyMs(getInputDevice())} ms)`),
+      h('button', { onclick: () => go('chords') }, `Calibrate chords (${chordsDone()}/${CHORD_LIBRARY.length})`),
       h('button', { onclick: () => go('upload') }, 'Upload a tab')),
     h('div', { class: 'label' }, 'Speed'),
     speedRow,

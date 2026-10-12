@@ -1,8 +1,8 @@
-// npm run e2e: make synthetic recordings of two exercises and check each still scores 100%.
+// npm run e2e: make synthetic recordings of some exercises and check each still scores 100%.
 import { execFileSync } from 'node:child_process';
 import { replay, startServer } from './lib.mjs';
 
-const CASES = ['open-strings', 'c-major-scale'];
+const CASES = ['open-strings', 'c-major-scale', 'open-chords', 'power-chords'];
 const out = (id) => `e2e/out/${id}.wav`;
 
 for (const id of CASES) execFileSync('node', ['e2e/genwav.mjs', id, out(id)], { stdio: 'inherit' });

@@ -4,13 +4,15 @@ import { getTrack } from '../library.js';
 import { needsCountIn, songStartWithIntro } from '../logic/backing.js';
 import { createOnsetTracker } from '../logic/onsets.js';
 import { createSession } from '../logic/session.js';
+import { createStrumTracker } from '../logic/strums.js';
 import { COUNT_IN_BEATS, beatSeconds, songLengthSeconds } from '../logic/song.js';
-import { getInputDevice, getLatencyMs, saveBest } from '../store.js';
+import { getChordTemplates, getInputDevice, getLatencyMs, saveBest } from '../store.js';
 import { activeTuning, beginRun } from './debugState.js';
 import { backButton, h, micError } from './dom.js';
 import { drawHighway } from './highway.js';
 
 const START_DELAY_S = 0.4;
+const CHORD_NAME_S = 0.8;
 const TAIL_S = 1.2;
 
 function scheduleCountIn(songStart, beatSec) {
@@ -32,9 +34,14 @@ function run(root, go, { song, speed }, ui, dbg, backing) {
   const now0 = audio.currentTime + START_DELAY_S;
   const songStart = backing ? songStartWithIntro(now0 + countInS, now0, backing.track.offsetS, speed) : now0 + countInS;
   const latencyS = getLatencyMs(getInputDevice()) / 1000;
-  const session = createSession(song, speed, { toleranceCents: activeTuning().toleranceCents });
+  const session = createSession(song, speed, {
+    toleranceCents: activeTuning().toleranceCents,
+    chordTemplates: getChordTemplates(getInputDevice()),
+  });
   const tracker = createOnsetTracker();
+  const strums = session.chords.some((c) => c.scored >= 0) ? createStrumTracker() : null;
   const labels = [];
+  let chordShown = { name: '', until: -Infinity };
   let rafId = 0;
   let stopped = false;
 
@@ -47,9 +54,19 @@ function run(root, go, { song, speed }, ui, dbg, backing) {
   const addLabel = (r) =>
     labels.push({ ...r, string: song.notes[r.index].string, at: visualNow() });
 
-  const offFrame = onFrame(({ time, note }) => {
-    ui.detected.textContent = note ? note.name : '';
-    const onset = tracker.push({ time: time - latencyS - songStart, note });
+  const offFrame = onFrame((frame) => {
+    const { note } = frame;
+    const time = frame.time - latencyS - songStart;
+    const strum = strums ? strums.push({ ...frame, time }) : null;
+    if (strum) {
+      const verdict = session.onStrum(strum);
+      dbg.strum(strum, verdict);
+      if (verdict) addLabel(verdict);
+      if (verdict?.name) chordShown = { name: verdict.name, until: time + CHORD_NAME_S };
+    }
+    // A chord name stays up for a moment; the single-note detector cannot name chords.
+    ui.detected.textContent = time < chordShown.until ? chordShown.name : (note?.name ?? '');
+    const onset = tracker.push({ time, note });
     if (!onset) return;
     const verdict = session.onOnset(onset);
     dbg.onset(onset, verdict);
@@ -64,7 +81,7 @@ function run(root, go, { song, speed }, ui, dbg, backing) {
       dbg.miss(r.index, session.times[r.index]);
     }
     ui.count.textContent = now < 0 ? String(Math.ceil(-now / beatSec)) : '';
-    drawHighway(ui.canvas, { song, beatSec, now: visualNow(), results: session.results, labels });
+    drawHighway(ui.canvas, { song, beatSec, now: visualNow(), results: session.results, labels, chords: session.chords });
     if (now > songLengthSeconds(song, speed) + TAIL_S) return finishRun(go, song, speed, session);
     rafId = requestAnimationFrame(loop);
   }

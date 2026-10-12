@@ -35,8 +35,8 @@ describe('song mapping', () => {
     expect(validateSong({ ...mini, notes: [{ beat: 0, string: 7, fret: 0, durationBeats: 1 }] })).toBe(false);
     expect(validateSong(null)).toBe(false);
   });
-  it('ships four valid songs with plausible guitar pitches', () => {
-    expect(SONGS).toHaveLength(4);
+  it('ships six valid songs with plausible guitar pitches', () => {
+    expect(SONGS).toHaveLength(6);
     for (const s of SONGS) {
       expect(validateSong(s)).toBe(true);
       for (const m of expectedMidiList(s)) expect(m).toBeGreaterThanOrEqual(40);
