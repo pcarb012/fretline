@@ -1,0 +1,14 @@
+# DigitalOcean App Platform spec: serves the Vite build as a static site.
+# Create with `doctl apps create --spec .do/app.yaml` or import it in the
+# App Platform console. Static sites are on the free tier and get HTTPS,
+# which the browser needs before it will grant microphone access.
+name: fretline
+static_sites:
+  - name: web
+    github:
+      repo: pcarb012/fretline
+      branch: main
+      deploy_on_push: true
+    environment_slug: node-js
+    build_command: npm test && npm run build
+    output_dir: dist

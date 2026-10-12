@@ -12,6 +12,10 @@ Other commands: `npm test` (tests and coverage), `npm run build` (production bui
 
 Use headphones for the click and plug a guitar into the computer, or hold the mic near an acoustic. Run **Calibrate latency** once; the offset is saved in the browser.
 
+## Host on DigitalOcean
+
+`.do/app.yaml` deploys the site to DigitalOcean App Platform as a free static site that rebuilds on every push to `main`. Run `doctl apps create --spec .do/app.yaml`, or in the console choose **Create App**, pick this repo and upload the spec. The site is served over HTTPS, which the microphone requires.
+
 ## How scoring works
 
 - A note is hit when the pitch is within 50 cents of the expected note (any string that gives the same pitch counts).
