@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { beatSeconds, expectedMidiList, noteTimes, songLengthSeconds, validateSong } from '../src/logic/song.js';
-import { median, medianOffsetMs } from '../src/logic/latency.js';
+import { calibrationResult, median, medianOffsetMs, spreadMs } from '../src/logic/latency.js';
 import { createOnsetTracker } from '../src/logic/onsets.js';
 import { createSession } from '../src/logic/session.js';
 import { SONGS } from '../src/songs/index.js';
@@ -67,9 +67,37 @@ describe('latency median', () => {
   });
 });
 
+describe('calibration result', () => {
+  const clicks = [1, 2, 3, 4, 5, 6, 7, 8];
+  const plucks = (offs) => clicks.map((c, i) => c + offs[i] / 1000);
+  it('accepts a steady run', () => {
+    const r = calibrationResult(clicks, plucks([100, 110, 90, 105, 95, 100, 120, 100]));
+    expect(r.ok).toBe(true);
+    expect(r.ms).toBeCloseTo(100, 3);
+  });
+  it('rejects too few plucks', () => {
+    expect(calibrationResult(clicks, [1.1])).toEqual({ ok: false, reason: 'few' });
+  });
+  it('rejects a median outside -100..400 ms', () => {
+    expect(calibrationResult(clicks, plucks(Array(8).fill(-130))).reason).toBe('range');
+    expect(calibrationResult(clicks, plucks(Array(8).fill(450))).reason).toBe('range');
+  });
+  it('rejects scattered offsets', () => {
+    const r = calibrationResult(clicks, plucks([0, 300, 20, 280, 10, 290, 30, 270]));
+    expect(r).toEqual({ ok: false, reason: 'spread' });
+  });
+  it('computes spread', () => {
+    expect(spreadMs([100, 100, 100])).toBe(0);
+    expect(spreadMs([90, 100, 110])).toBe(10);
+  });
+  it('accepts a median just inside the limit', () => {
+    expect(calibrationResult(clicks, plucks(Array(8).fill(399))).ok).toBe(true);
+  });
+});
+
 describe('onset tracker', () => {
-  const note = (midi, rms = 0.1) => ({ midi, midiFloat: midi, rms });
-  it('fires on a new note, a change, and a re-pluck, not on a sustain', () => {
+  const note = (midi, rms = 0.1, cents = 0) => ({ midi, midiFloat: midi + cents / 100, rms });
+  it('fires on a new note, a far change, and a re-pluck, not on a sustain', () => {
     const t = createOnsetTracker();
     expect(t.push({ time: 0, note: null })).toBeNull();
     expect(t.push({ time: 1, note: note(60) }).time).toBe(1);
@@ -80,6 +108,26 @@ describe('onset tracker', () => {
     expect(t.push({ time: 6, note: note(62) }).time).toBe(6);
     t.reset();
     expect(t.push({ time: 7, note: note(62) }).time).toBe(7);
+  });
+  it('ignores one-frame pitch wobble to a neighbouring note', () => {
+    const t = createOnsetTracker();
+    t.push({ time: 0, note: note(60, 0.1, 45) });
+    expect(t.push({ time: 1, note: note(61, 0.1, -45) })).toBeNull();
+    expect(t.push({ time: 2, note: note(60, 0.1, 45) })).toBeNull();
+    expect(t.push({ time: 3, note: note(61, 0.1, -45) })).toBeNull();
+  });
+  it('fires when a close new note holds for two frames, at its first frame', () => {
+    const t = createOnsetTracker();
+    t.push({ time: 0, note: note(60, 0.1, 45) });
+    expect(t.push({ time: 1, note: note(61, 0.1, -45) })).toBeNull();
+    expect(t.push({ time: 2, note: note(61, 0.1, -45) })).toMatchObject({ time: 1, midi: 61 });
+  });
+  it('compares a re-pluck against the quietest recent frame', () => {
+    const t = createOnsetTracker();
+    t.push({ time: 0, note: note(60, 0.1) });
+    t.push({ time: 1, note: note(60, 0.03) });
+    t.push({ time: 2, note: note(60, 0.05) });
+    expect(t.push({ time: 3, note: note(60, 0.07) }).time).toBe(3);
   });
 });
 

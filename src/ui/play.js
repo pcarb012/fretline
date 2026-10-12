@@ -1,4 +1,4 @@
-import { click, getContext, onFrame, startMic } from '../audio/engine.js';
+import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.js';
 import { createOnsetTracker } from '../logic/onsets.js';
 import { createSession } from '../logic/session.js';
 import { COUNT_IN_BEATS, beatSeconds, songLengthSeconds } from '../logic/song.js';
@@ -28,28 +28,30 @@ function run(root, go, { song, speed }, ui) {
 
   scheduleCountIn(songStart, beatSec);
 
-  const addLabel = (r, now) =>
-    labels.push({ ...r, string: song.notes[r.index].string, at: now });
+  // What the player sees and hears lags the audio clock by the output latency.
+  const visualNow = () => audio.currentTime - (audio.outputLatency || 0) - songStart;
+  const addLabel = (r) =>
+    labels.push({ ...r, string: song.notes[r.index].string, at: visualNow() });
 
   const offFrame = onFrame(({ time, note }) => {
     ui.detected.textContent = note ? note.name : '';
     const onset = tracker.push({ time: time - latencyS - songStart, note });
     const verdict = onset && session.onOnset(onset);
-    if (verdict) addLabel(verdict, audio.currentTime - songStart);
+    if (verdict) addLabel(verdict);
   });
 
   function finish() {
     const summary = session.summary();
-    const isBest = saveBest(song.id, summary.score, summary.stars);
+    const isBest = saveBest(song.id, speed, summary.score, summary.stars);
     go('results', { song, speed, summary, isBest });
   }
 
   function loop() {
     if (stopped) return;
     const now = audio.currentTime - songStart;
-    for (const r of session.tick(now)) addLabel(r, now);
+    for (const r of session.tick(now)) addLabel(r);
     ui.count.textContent = now < 0 ? String(Math.ceil(-now / beatSec)) : '';
-    drawHighway(ui.canvas, { song, beatSec, now, results: session.results, labels });
+    drawHighway(ui.canvas, { song, beatSec, now: visualNow(), results: session.results, labels });
     if (now > songLengthSeconds(song, speed) + TAIL_S) return finish();
     rafId = requestAnimationFrame(loop);
   }
@@ -86,5 +88,6 @@ export function mountPlay(root, go, args) {
   return () => {
     gone = true;
     if (stop) stop();
+    stopMic();
   };
 }

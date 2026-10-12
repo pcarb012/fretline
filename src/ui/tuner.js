@@ -1,4 +1,5 @@
-import { onFrame, startMic } from '../audio/engine.js';
+import { onFrame, startMic, stopMic } from '../audio/engine.js';
+import { formatCents } from '../logic/music.js';
 import { backButton, h, micError } from './dom.js';
 
 const HOLD_MS = 1000;
@@ -27,7 +28,7 @@ export function mountTuner(root, go) {
   function show(note) {
     const clamped = Math.max(-RANGE_CENTS, Math.min(RANGE_CENTS, note.cents));
     name.textContent = note.name;
-    cents.textContent = `${note.cents >= 0 ? '+' : ''}${note.cents.toFixed(0)} cents`;
+    cents.textContent = `${formatCents(note.cents)} cents`;
     needle.style.left = `${50 + (clamped / RANGE_CENTS) * 50}%`;
     needle.classList.toggle('ok', Math.abs(note.cents) <= IN_TUNE_CENTS);
   }
@@ -51,5 +52,6 @@ export function mountTuner(root, go) {
   return () => {
     gone = true;
     if (off) off();
+    stopMic();
   };
 }

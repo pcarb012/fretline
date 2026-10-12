@@ -1,5 +1,5 @@
-import { click, getContext, onFrame, startMic } from '../audio/engine.js';
-import { medianOffsetMs } from '../logic/latency.js';
+import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.js';
+import { calibrationResult } from '../logic/latency.js';
 import { createOnsetTracker } from '../logic/onsets.js';
 import { getLatencyMs, setLatencyMs } from '../store.js';
 import { backButton, h, micError } from './dom.js';
@@ -8,6 +8,12 @@ const CLICKS = 8;
 const GAP_S = 0.8;
 const LEAD_S = 1.2;
 const TAIL_MS = 1500;
+
+const RETRY = {
+  few: 'Too few plucks were heard. Try again with a louder pluck on every click.',
+  range: 'That run looks off, so it was not saved. Try again and pluck right on each click.',
+  spread: 'Your plucks were too uneven to measure, so nothing was saved. Try again, steady and on the beat.',
+};
 
 function runClicks(audio) {
   const first = audio.currentTime + LEAD_S;
@@ -24,6 +30,7 @@ export function mountCalibrate(root, go) {
     h('p', {}, `Current offset: ${getLatencyMs()} ms`), startBtn, result);
 
   let off = null;
+  let timer = 0;
   let gone = false;
 
   async function start() {
@@ -45,7 +52,7 @@ export function mountCalibrate(root, go) {
     const clicks = runClicks(getContext());
     message.textContent = 'Pluck on every click...';
     const wait = TAIL_MS + (LEAD_S + CLICKS * GAP_S) * 1000;
-    setTimeout(() => finish(clicks, onsets), wait);
+    timer = setTimeout(() => finish(clicks, onsets), wait);
   }
 
   function finish(clicks, onsets) {
@@ -53,18 +60,20 @@ export function mountCalibrate(root, go) {
     off = null;
     startBtn.disabled = false;
     if (gone) return;
-    const ms = medianOffsetMs(clicks, onsets);
-    if (ms === null) {
-      message.textContent = 'Too few plucks were heard. Try again with a louder pluck.';
+    const r = calibrationResult(clicks, onsets);
+    if (!r.ok) {
+      message.textContent = RETRY[r.reason];
       return;
     }
-    setLatencyMs(ms);
-    message.textContent = `Saved. Your offset is ${Math.round(ms)} ms.`;
+    setLatencyMs(r.ms);
+    message.textContent = `Saved. Your offset is ${Math.round(r.ms)} ms.`;
   }
 
   startBtn.addEventListener('click', start);
   return () => {
     gone = true;
+    clearTimeout(timer);
     if (off) off();
+    stopMic();
   };
 }
