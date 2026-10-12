@@ -63,6 +63,7 @@ export async function replay(options) {
   const fakeWav = path.resolve(padWav(wav, padMs));
   const browser = await chromium.launch({
     headless,
+    executablePath: process.env.FRETLINE_CHROMIUM || undefined,
     args: [
       '--use-fake-ui-for-media-stream',
       '--use-fake-device-for-media-stream',
