@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
-  build: { assetsInlineLimit: 0 },
+  // alphaTab (Guitar Pro import) is a large chunk, loaded only on the upload screen.
+  build: { assetsInlineLimit: 0, chunkSizeWarningLimit: 1500 },
   server: { port: 3939, strictPort: true },
   test: {
     include: ['tests/**/*.test.js'],

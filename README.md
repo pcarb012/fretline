@@ -33,6 +33,18 @@ build('my-song', 'My song', 80, [
 Notes are placed one after another. For gaps or chords, write the objects by hand:
 `{ beat, string, fret, durationBeats }`. Standard tuning is `[40, 45, 50, 55, 59, 64]` (MIDI, low to high). The song-list screen picks it up automatically. Keep songs original or public domain.
 
+## Upload tabs and backing tracks
+
+Click **Upload a tab** on the song list. It accepts:
+
+- Guitar Pro files (.gp3, .gp4, .gp5, .gpx, .gp). Pick the track if there is more than one guitar. The import follows the same rules as `tools/gp2fretline.py`: shuffle feel, ties, dead and ghost notes, and only the top note of a chord is scored. The capo is added to the tuning.
+- Plain-text tab: six lines per block, high e on top. Text tab has no rhythm, so pick a tempo and either the same length for every note or "follow the spacing" (N characters = 1 beat). String labels such as `D|` on the bottom line set the tuning. `x` is a dead note.
+- Fretline JSON (the format above).
+
+Any song, including the built-in ones, can have a backing track (MP3, WAV, OGG, M4A). Use **+ Track** on its row. Set **Beat 1 starts at** to the point in the audio where the tab's first beat falls; a longer intro plays in full before the notes arrive, and the count-in clicks are skipped when the track leads in. At 100% speed the track is scheduled on the audio clock; at 50% and 75% it plays through an audio element that keeps the pitch, so the sync can be off by a few tens of milliseconds.
+
+Uploads are stored in the browser (IndexedDB), not on a server, so they stay on that computer and browser. Use headphones so the mic doesn't hear the backing track.
+
 ## Blues lessons
 
 `src/songs/blues/*.json` come from the Blues Masterclass .gp5 files. Rebuild them with `npm run lessons` (needs `uv` and the guitar-pro-mcp project; see `tools/gp2fretline.py`). Lesson N+1 unlocks after one star on lesson N. Notes marked `judge: false` (dead, ghost and the lower notes of double stops) are drawn in outline and not scored.
@@ -55,6 +67,7 @@ Make test audio with `node e2e/genwav.mjs <songId> <out.wav>`. Real takes go in 
 
 - `src/logic/` pure functions with tests (pitch, judging, score, songs, latency, onsets, session)
 - `src/audio/` microphone, AudioWorklet, pitch detection (`pitchy`), click sound
+- `src/library.js` uploaded songs and backing tracks (IndexedDB)
 - `src/ui/` screens and the canvas highway
 - `tests/` Vitest tests
 - `e2e/` Playwright fake-microphone scripts

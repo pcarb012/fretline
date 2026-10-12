@@ -1,4 +1,7 @@
+import { prepareBacking, startBacking } from '../audio/backing.js';
 import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.js';
+import { getTrack } from '../library.js';
+import { needsCountIn, songStartWithIntro } from '../logic/backing.js';
 import { createOnsetTracker } from '../logic/onsets.js';
 import { createSession } from '../logic/session.js';
 import { COUNT_IN_BEATS, beatSeconds, songLengthSeconds } from '../logic/song.js';
@@ -22,10 +25,12 @@ function finishRun(go, song, speed, session) {
   go('results', { song, speed, summary, isBest });
 }
 
-function run(root, go, { song, speed }, ui, dbg) {
+function run(root, go, { song, speed }, ui, dbg, backing) {
   const audio = getContext();
   const beatSec = beatSeconds(song.bpm, speed);
-  const songStart = audio.currentTime + START_DELAY_S + COUNT_IN_BEATS * beatSec;
+  const countInS = COUNT_IN_BEATS * beatSec;
+  const now0 = audio.currentTime + START_DELAY_S;
+  const songStart = backing ? songStartWithIntro(now0 + countInS, now0, backing.track.offsetS, speed) : now0 + countInS;
   const latencyS = getLatencyMs(getInputDevice()) / 1000;
   const session = createSession(song, speed, { toleranceCents: activeTuning().toleranceCents });
   const tracker = createOnsetTracker();
@@ -33,7 +38,8 @@ function run(root, go, { song, speed }, ui, dbg) {
   let rafId = 0;
   let stopped = false;
 
-  scheduleCountIn(songStart, beatSec);
+  if (!backing || needsCountIn(backing.track.offsetS, speed, countInS)) scheduleCountIn(songStart, beatSec);
+  const stopBacking = backing ? startBacking(audio, backing.prepared, backing.track, { songStart, speed }) : null;
   dbg.setStart(songStart, audio.sampleRate);
 
   // What the player sees and hears lags the audio clock by the output latency.
@@ -68,7 +74,15 @@ function run(root, go, { song, speed }, ui, dbg) {
     stopped = true;
     cancelAnimationFrame(rafId);
     offFrame();
+    if (stopBacking) stopBacking();
   };
+}
+
+/** Load and decode the song's backing track, if it has one. */
+async function loadBacking(song, speed) {
+  const track = await getTrack(song.id);
+  if (!track) return null;
+  return { track, prepared: await prepareBacking(getContext(), track, speed) };
 }
 
 export function mountPlay(root, go, args) {
@@ -95,8 +109,12 @@ export function mountPlay(root, go, args) {
   let stop = null;
   let gone = false;
   startMic()
-    .then(() => {
-      if (!gone) stop = run(root, go, args, ui, dbg);
+    .then(() => loadBacking(args.song, args.speed).catch(() => {
+      status.append(h('div', { class: 'notice error' }, 'The backing track could not be played; playing without it.'));
+      return null;
+    }))
+    .then((backing) => {
+      if (!gone) stop = run(root, go, args, ui, dbg, backing);
     })
     .catch((err) => status.append(micError(err)));
   return () => {

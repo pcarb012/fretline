@@ -11,6 +11,7 @@
     "e2e": "node e2e/run.mjs"
   },
   "dependencies": {
+    "@coderline/alphatab": "^1.8.4",
     "pitchy": "^4.1.0"
   },
   "devDependencies": {
