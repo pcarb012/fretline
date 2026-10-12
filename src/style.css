@@ -147,6 +147,7 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 .song h3 { margin: 0; font-size: 28px; line-height: 1.05; }
 .song small { display: block; font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 4px; }
 .song.locked { opacity: 0.65; }
+.songs .empty { color: var(--dim); padding: 16px 0; margin: 0; }
 .song.locked:hover { background: none; }
 .song.locked::after { display: none; }
 
@@ -232,6 +233,15 @@ h2 + .big { font-size: clamp(72px, 12vw, 120px); }
   canvas { height: 300px; }
 }
 
+.field { margin: 16px 0; }
+.field label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.field input:not([type='range']), .field select {
+  display: block; width: 100%; max-width: 420px; margin-top: 6px; padding: 8px 10px;
+  font: inherit; font-size: 15px; letter-spacing: 0; text-transform: none;
+  background: var(--bg-2); color: var(--text); border: 1px solid var(--rule);
+}
+.field input[type='range'] { display: block; width: 100%; max-width: 420px; margin-top: 6px; accent-color: var(--amber); }
+.field small, .field + small { display: block; margin-top: 6px; color: var(--dim); }
 .device-picker { margin: 16px 0; }
 .device-picker label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
 .device-picker select {
