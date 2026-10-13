@@ -2,7 +2,10 @@ import { click, getContext, onFrame, startMic, stopMic } from '../audio/engine.j
 import { createOnsetTracker } from '../logic/onsets.js';
 import { createSession } from '../logic/session.js';
 import { COUNT_IN_BEATS, beatSeconds, songLengthSeconds } from '../logic/song.js';
+import { quitSeconds } from '../logic/practiceCard.js';
 import { getInputDevice, getLatencyMs, saveBest } from '../store.js';
+import { logSession } from '../backend/practice.js';
+import { pushBest } from '../backend/sync.js';
 import { activeTuning, beginRun } from './debugState.js';
 import { backButton, h, micError } from './dom.js';
 import { drawHighway } from './highway.js';
@@ -16,9 +19,22 @@ function scheduleCountIn(songStart, beatSec) {
   }
 }
 
-function finishRun(go, song, speed, session) {
+/** Fire and forget: the backend calls never throw, and the screen never waits for them. */
+function sendToServer(call) {
+  try {
+    Promise.resolve(call()).catch(() => {});
+  } catch {
+    // Recording is optional; the run itself must not suffer.
+  }
+}
+
+function finishRun(go, song, speed, session, seconds) {
   const summary = session.summary();
   const isBest = saveBest(song.id, speed, summary.score, summary.stars);
+  sendToServer(() => pushBest(song.id, speed, summary.score, summary.stars));
+  sendToServer(() => logSession({
+    songId: song.id, speed, seconds, score: summary.score, stars: summary.stars,
+  }));
   go('results', { song, speed, summary, isBest });
 }
 
@@ -30,8 +46,11 @@ function run(root, go, { song, speed }, ui, dbg) {
   const session = createSession(song, speed, { toleranceCents: activeTuning().toleranceCents });
   const tracker = createOnsetTracker();
   const labels = [];
+  const startedAt = performance.now();
+  const secondsPlayed = () => (performance.now() - startedAt) / 1000;
   let rafId = 0;
   let stopped = false;
+  let finished = false;
 
   scheduleCountIn(songStart, beatSec);
   dbg.setStart(songStart, audio.sampleRate);
@@ -59,7 +78,10 @@ function run(root, go, { song, speed }, ui, dbg) {
     }
     ui.count.textContent = now < 0 ? String(Math.ceil(-now / beatSec)) : '';
     drawHighway(ui.canvas, { song, beatSec, now: visualNow(), results: session.results, labels });
-    if (now > songLengthSeconds(song, speed) + TAIL_S) return finishRun(go, song, speed, session);
+    if (now > songLengthSeconds(song, speed) + TAIL_S) {
+      finished = true;
+      return finishRun(go, song, speed, session, secondsPlayed());
+    }
     rafId = requestAnimationFrame(loop);
   }
   rafId = requestAnimationFrame(loop);
@@ -68,6 +90,10 @@ function run(root, go, { song, speed }, ui, dbg) {
     stopped = true;
     cancelAnimationFrame(rafId);
     offFrame();
+    const seconds = finished ? 0 : quitSeconds(secondsPlayed());
+    if (seconds) {
+      sendToServer(() => logSession({ songId: song.id, speed, seconds, score: null, stars: null }));
+    }
   };
 }
 

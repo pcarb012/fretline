@@ -43,7 +43,10 @@ export function saveBest(songId, speed, score, stars) {
   return true;
 }
 
-const latencyKey = (deviceId) => `${LATENCY_KEY}.${deviceId || 'default'}`;
+/** Replace every saved best with this map (used after a sign-in merge). */
+export const replaceAllBest = (map) => write(BEST_KEY, JSON.stringify(map));
+
+const latencyKey =(deviceId) => `${LATENCY_KEY}.${deviceId || 'default'}`;
 
 /** Latency for one input device. Falls back to the old single value saved before devices were tracked. */
 export function getLatencyMs(deviceId = '') {

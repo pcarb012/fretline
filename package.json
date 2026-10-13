@@ -8,9 +8,11 @@
     "build": "vite build",
     "test": "vitest run --coverage",
     "lessons": "node tools/build-lessons.mjs",
-    "e2e": "node e2e/run.mjs"
+    "e2e": "node e2e/run.mjs",
+    "seed": "node tools/seed-songs.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "pitchy": "^4.1.0"
   },
   "devDependencies": {
