@@ -1,5 +1,6 @@
 // Upserts the bundled exercises and lessons into the Supabase `songs` table.
-// Usage: node tools/seed-songs.mjs [--dry-run]
+// Usage: node tools/seed-songs.mjs [--dry-run | --sql]
+// --sql prints an upsert to paste into the Supabase SQL editor; no key needed.
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -38,6 +39,19 @@ const rows = buildRows();
 
 if (process.argv.includes('--dry-run')) {
   console.log(`${rows.length} rows (dry run, nothing sent). First row id: ${rows[0].id}`);
+  process.exit(0);
+}
+
+// Dollar-quoted, so song text never needs escaping.
+const lit = (value) => (value === null ? 'null' : `$fl$${typeof value === 'string' ? value : JSON.stringify(value)}$fl$`);
+
+if (process.argv.includes('--sql')) {
+  const values = rows.map((r) =>
+    `  (${lit(r.id)}, ${lit(r.title)}, ${lit(r.kind)}, ${r.position}, ${r.bpm}, '{${r.tuning.join(',')}}', ${lit(r.sections)}::jsonb, ${lit(r.notes)}::jsonb)`);
+  console.log(`insert into public.songs (id, title, kind, position, bpm, tuning, sections, notes) values
+${values.join(',\n')}
+on conflict (id) do update set title = excluded.title, kind = excluded.kind, position = excluded.position,
+  bpm = excluded.bpm, tuning = excluded.tuning, sections = excluded.sections, notes = excluded.notes, updated_at = now();`);
   process.exit(0);
 }
 

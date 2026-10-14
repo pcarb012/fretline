@@ -25,7 +25,9 @@ Find them under **Project Settings > API**.
 
 ## 4. Seed the songs
 
-In a terminal at the project root, test first:
+Easiest: paste all of `supabase/seed.sql` into a new SQL Editor query and click **Run**. It needs no key. After the bundled songs change, rebuild it with `node tools/seed-songs.mjs --sql > supabase/seed.sql`.
+
+Or from a terminal at the project root, test first:
 
 ```
 node tools/seed-songs.mjs --dry-run
