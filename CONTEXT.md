@@ -18,6 +18,10 @@ _Avoid_: Speed (for BPM), pace
 A named stretch of a song, starting at a given beat and running until the next section starts.
 _Avoid_: Part, segment, phrase
 
+**Lesson**:
+A song in the ordered course. A lesson is locked until the one before it has earned a star in a run; a locked lesson can still be practised.
+_Avoid_: Level, stage
+
 ### Playing
 
 **Speed**:
@@ -41,7 +45,7 @@ One play-through of the loop during practice.
 _Avoid_: Lap, repetition, iteration
 
 **Break**:
-The short count-in between two passes, during which nothing is scored and any backing track is silent.
+The three-beat count-in between two passes, during which nothing is scored and any backing track is silent.
 _Avoid_: Gap, pause, rest
 
 **Hit rate**:
