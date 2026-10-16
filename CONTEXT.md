@@ -39,3 +39,19 @@ _Avoid_: Range, selection, region
 **Pass**:
 One play-through of the loop during practice.
 _Avoid_: Lap, repetition, iteration
+
+**Break**:
+The short count-in between two passes, during which nothing is scored and any backing track is silent.
+_Avoid_: Gap, pause, rest
+
+**Hit rate**:
+The share of scored notes and chords in a pass that were hit, whether Perfect or Good.
+_Avoid_: Accuracy, score (score also weighs timing)
+
+**Good pass**:
+A pass with a hit rate of at least 90%. Two good passes in a row raise the speed by one step.
+_Avoid_: Clean pass, successful pass
+
+**Full speed**:
+A speed of 1, the song's own tempo. Practice never goes above it.
+_Avoid_: 100%, normal speed
